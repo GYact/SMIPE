@@ -1,0 +1,20 @@
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/racc-1.8.1/ext/racc/cparse
+/Users/yunisuta/.rbenv/versions/3.3.0/bin/ruby extconf.rb
+creating Makefile
+
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/racc-1.8.1/ext/racc/cparse
+make DESTDIR\= sitearchdir\=./.gem.20250516-83763-j1hto8 sitelibdir\=./.gem.20250516-83763-j1hto8 clean
+
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/racc-1.8.1/ext/racc/cparse
+make DESTDIR\= sitearchdir\=./.gem.20250516-83763-j1hto8 sitelibdir\=./.gem.20250516-83763-j1hto8
+compiling cparse.c
+linking shared-object racc/cparse.bundle
+ld: warning: search path '/opt/homebrew/opt/php@8.0/lib' not found
+ld: warning: search path '/opt/homebrew/opt/php@8.0/lib' not found
+
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/racc-1.8.1/ext/racc/cparse
+make DESTDIR\= sitearchdir\=./.gem.20250516-83763-j1hto8 sitelibdir\=./.gem.20250516-83763-j1hto8 install
+/opt/homebrew/bin/ginstall -c -m 0755 cparse.bundle ./.gem.20250516-83763-j1hto8/racc
+
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/racc-1.8.1/ext/racc/cparse
+make DESTDIR\= sitearchdir\=./.gem.20250516-83763-j1hto8 sitelibdir\=./.gem.20250516-83763-j1hto8 clean

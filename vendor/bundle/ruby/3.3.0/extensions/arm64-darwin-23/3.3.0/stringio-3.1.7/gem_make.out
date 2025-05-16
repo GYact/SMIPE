@@ -1,0 +1,21 @@
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/stringio-3.1.7/ext/stringio
+/Users/yunisuta/.rbenv/versions/3.3.0/bin/ruby extconf.rb
+checking for rb_io_mode_t in ruby/io.h... no
+creating Makefile
+
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/stringio-3.1.7/ext/stringio
+make DESTDIR\= sitearchdir\=./.gem.20250516-83763-dcjzss sitelibdir\=./.gem.20250516-83763-dcjzss clean
+
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/stringio-3.1.7/ext/stringio
+make DESTDIR\= sitearchdir\=./.gem.20250516-83763-dcjzss sitelibdir\=./.gem.20250516-83763-dcjzss
+compiling stringio.c
+linking shared-object stringio.bundle
+ld: warning: search path '/opt/homebrew/opt/php@8.0/lib' not found
+ld: warning: search path '/opt/homebrew/opt/php@8.0/lib' not found
+
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/stringio-3.1.7/ext/stringio
+make DESTDIR\= sitearchdir\=./.gem.20250516-83763-dcjzss sitelibdir\=./.gem.20250516-83763-dcjzss install
+/opt/homebrew/bin/ginstall -c -m 0755 stringio.bundle ./.gem.20250516-83763-dcjzss
+
+current directory: /Users/yunisuta/SMIPE/vendor/bundle/ruby/3.3.0/gems/stringio-3.1.7/ext/stringio
+make DESTDIR\= sitearchdir\=./.gem.20250516-83763-dcjzss sitelibdir\=./.gem.20250516-83763-dcjzss clean
