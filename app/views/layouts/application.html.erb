@@ -23,6 +23,11 @@
   </head>
 
   <body>
+    <%= render 'layouts/header' %>
+    <% flash.each do |message_type, message| %>
+      <%= message %>
+    <% end %>
+    
     <%= yield %>
-  </body>
+</body>
 </html>
