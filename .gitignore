@@ -37,3 +37,6 @@
 /.ruby-version
 /.vendor
 /.log
+.ruby-version
+.vendor
+.log
