@@ -34,6 +34,6 @@
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 
-.ruby-version
-.vendor
-.log
+/.ruby-version
+/.vendor
+/.log
