@@ -1,0 +1,6 @@
+<% if logged_in?%>
+  <h1>home</h1>
+  <h4>こんにちは,<%=current_user.name%>さん</h4>
+<% else %>
+  <h4>ログインしてください</h4>
+<%end%>

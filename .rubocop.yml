@@ -1,8 +1,38 @@
-# Omakase Ruby styling for Rails
-inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+# .rubocop.yml
+inherit_gem:
+  rubocop-rails-omakase: rubocop.yml
 
-# Overwrite or add rules to create your own house style
-#
-# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
-# Layout/SpaceInsideArrayLiteralBrackets:
-#   Enabled: false
+AllCops:
+  # Rubyバージョンの指定
+  TargetRubyVersion: 3.3
+
+  # 新しいCopsを有効化
+  NewCops: enable
+
+  # 除外するファイルやディレクトリ
+  Exclude:
+    - 'db/**/*'
+    - 'config/**/*'
+    - 'script/**/*'
+    - 'bin/**/*'
+    - 'vendor/**/*'
+    - 'node_modules/**/*'
+    - 'tmp/**/*'
+    - 'log/**/*'
+    - 'storage/**/*'
+
+# 行の長さに関する設定
+Layout/LineLength:
+  Max: 120
+
+# ドキュメントコメントの要求を無効化
+Style/Documentation:
+  Enabled: false
+
+# メソッドの行数制限
+Metrics/MethodLength:
+  Max: 15
+
+# メソッドのABCサイズの制限
+Metrics/AbcSize:
+  Max: 20

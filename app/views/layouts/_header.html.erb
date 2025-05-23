@@ -1,0 +1,7 @@
+<header class="header">
+  <% if logged_in? %>
+    <%= link_to 'ログアウト', logout_path, method: :delete, data: { confirm: 'ログアウトしますか？' } %>
+  <% else %>
+    <%= link_to 'Spotifyでログイン', '/auth/spotify' %>
+  <% end %>
+</header>
