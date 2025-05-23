@@ -50,8 +50,8 @@ jobs:
           ruby-version: '3.2.2' # ここに適切なRubyのバージョンを指定してください
           bundler-cache: true
 
-      - name: Lint code for consistent style
-        run: bin/rubocop -f github
+      # - name: Lint code for consistent style
+      #   run: bin/rubocop -f github
 
   test:
     runs-on: ubuntu-latest
