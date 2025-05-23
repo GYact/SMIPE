@@ -1,5 +1,4 @@
 module SessionsHelper
-
 def log_in(user)
   session[:uid] = user.uid
 end
@@ -18,5 +17,4 @@ def log_out
   session.delete(:uid)
   @current_user = nil
 end
-
 end

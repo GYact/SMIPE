@@ -1,6 +1,5 @@
 class SessionsController < ApplicationController
 def create
-
   unless request.env["omniauth.auth"][:uid]
     flash[:danger] = "連携に失敗しました"
     redirect_to root_url and return
@@ -37,5 +36,4 @@ def destroy
   flash[:success] = "ログアウトしました"
   redirect_to root_url
 end
-
 end
