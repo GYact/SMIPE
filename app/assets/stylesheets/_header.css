@@ -1,0 +1,195 @@
+.header {
+  background-color: #121212;
+  padding: 10px 0;
+  color: #FFFFFF;
+  border-bottom: 1px solid #282828;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+.header-inner-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.header-inner-container.logged-out {
+  justify-content: center;
+}
+
+.logo-and-nav {
+  display: flex;
+  align-items: center;
+}
+
+.hamburger-menu {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-right: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1002;
+  position: relative;
+}
+
+.hamburger-menu svg {
+  display: block;
+}
+
+.header-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #FFFFFF;
+}
+
+.header-smipe-logo {
+  margin-right: 8px;
+}
+
+.header-site-name {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.user-session-controls {
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar-placeholder {
+  margin-right: 10px;
+  border-radius: 50%;
+  background-color: #333;
+}
+
+.header-username {
+  margin-right: 15px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.header-logout-link {
+  text-decoration: none;
+  color: #B3B3B3;
+  font-size: 0.9em;
+  padding: 8px 12px;
+  border: 1px solid #535353;
+  border-radius: 20px;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.header-logout-link:hover {
+  background-color: #FFFFFF;
+  color: #121212;
+  border-color: #FFFFFF;
+}
+
+.spotify-login-link {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #1DB954;
+  color: #FFFFFF;
+  text-decoration: none;
+  border-radius: 20px;
+  font-weight: bold;
+}
+.spotify-login-link:hover {
+  background-color: #1ED760;
+}
+
+/* Mobile Navigation Menu */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: #181818;
+  padding-top: 70px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+  z-index: 1001;
+  overflow-y: auto;
+  transition: transform 0.3s ease-in-out;
+  transform: translateX(-100%);
+}
+
+.mobile-nav.is-open {
+  display: block;
+  transform: translateX(0);
+}
+
+.mobile-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mobile-nav-item {
+  display: block;
+  padding: 15px 20px;
+  color: #B3B3B3;
+  text-decoration: none;
+  font-size: 1.1em;
+  border-bottom: 1px solid #282828;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item:focus {
+  background-color: #282828;
+  color: #FFFFFF;
+}
+
+.mobile-nav-list li:last-child .mobile-nav-item {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .header-site-name {
+      font-size: 1.2em;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-inner-container {
+    padding: 0 10px;
+  }
+  .hamburger-menu {
+    margin-right: 10px;
+  }
+  .hamburger-menu svg {
+    width: 20px;
+    height: 20px;
+  }
+  .header-smipe-logo {
+      width: 30px;
+      height: 30px;
+  }
+   .header-site-name {
+      font-size: 1.1em;
+  }
+  .user-avatar-placeholder {
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+  }
+  .header-username {
+      display: none;
+  }
+  .header-logout-link {
+      padding: 6px 10px;
+      font-size: 0.8em;
+  }
+}
