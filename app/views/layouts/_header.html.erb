@@ -1,7 +1,39 @@
 <header class="header">
   <% if logged_in? %>
-    <%= link_to 'ログアウト', logout_path, method: :delete, data: { confirm: 'ログアウトしますか？' } %>
+    <div class="header-inner-container">
+      <div class="logo-and-nav">
+        <button class="hamburger-menu" id="hamburgerMenuButton" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNavMenu">
+          <svg viewBox="0 0 100 80" width="24" height="24" fill="#FFFFFF">
+            <rect width="100" height="15"></rect>
+            <rect y="30" width="100" height="15"></rect>
+            <rect y="60" width="100" height="15"></rect>
+          </svg>
+        </button>
+        <%= link_to root_path, class: "header-logo-link" do %>
+          <%= image_tag 'smipe.png', class: 'header-smipe-logo', alt: 'SMIPE Logo', size: '40x40' %>
+          <span class="header-site-name">SMIPE</span>
+        <% end %>
+      </div>
+
+      <nav class="mobile-nav" id="mobileNavMenu" aria-hidden="true">
+        <ul class="mobile-nav-list">
+          <li><%= link_to "Home", root_path, class: "mobile-nav-item" %></li>
+          <li><%= link_to "Browse", "#", class: "mobile-nav-item" %></li>
+          <li><%= link_to "My Library", "#", class: "mobile-nav-item" %></li>
+        </ul>
+      </nav>
+
+      <div class="user-session-controls">
+        <svg class="user-avatar-placeholder" viewBox="0 0 24 24" width="30" height="30" fill="#FFFFFF">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+        <span class="header-username"><%= current_user.try(:name) || "User" %></span>
+        <%= link_to "Logout", logout_path, data: { turbo_method: :delete }, class: "header-logout-link" %>
+      </div>
+    </div>
   <% else %>
-    <%= link_to 'Spotifyでログイン', '/auth/spotify' %>
+    <div class="header-inner-container logged-out">
+      <%= link_to 'Spotifyでログイン', '/auth/spotify', class: 'spotify-login-link' %>
+    </div>
   <% end %>
 </header>

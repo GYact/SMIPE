@@ -1,0 +1,196 @@
+/* filepath: /Users/yunisuta/SMIPE/app/assets/stylesheets/pages/_player.css */
+.player-container {
+  background-color: #121212; /* Spotifyのダーク背景色 */
+  color: #FFFFFF;
+  font-family: 'CircularSp', 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Spotify風フォント（フォントがシステムにない場合は代替） */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 70px; /* ヘッダー分のスペースを確保 */
+}
+
+.player-content {
+  flex-grow: 1;
+  padding: 20px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 900px; /* コンテンツの最大幅を調整 */
+  margin: 0 auto; /* 中央揃え */
+  width: 100%;
+}
+
+.album-art-section {
+  position: relative;
+  text-align: center;
+  margin-bottom: 30px;
+  width: 100%;
+  max-width: 350px; /* アルバムアートの最大サイズ */
+}
+
+.album-image {
+  width: 100%;
+  height: auto;
+  border-radius: 8px; /* 角丸 */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); /* 影を追加 */
+  display: block;
+}
+
+.track-details {
+  margin-top: 20px; /* 画像とのスペース */
+  text-align: center;
+}
+
+.song-title {
+  font-size: 1.8em; /* 曲名を大きく */
+  font-weight: 700; /* 太字 */
+  margin: 0 0 5px 0;
+  color: #FFFFFF;
+}
+
+.artist-name {
+  font-size: 1.1em;
+  font-weight: 400;
+  margin: 0;
+  color: #B3B3B3; /* アーティスト名は少し薄く */
+}
+
+.player-actions {
+  display: flex;
+  justify-content: center; /* 中央揃え */
+  align-items: center;
+  width: 100%;
+  max-width: 300px; /* ボタンセクションの幅 */
+  margin-bottom: 40px;
+  gap: 30px; /* ボタン間のスペース */
+}
+
+.action-button {
+  background-color: transparent;
+  border: none;
+  color: #B3B3B3;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: color 0.2s ease-in-out;
+  padding: 0; /* パディングをリセット */
+}
+
+.action-button svg {
+  width: 32px; /* アイコンサイズ調整 */
+  height: 32px;
+  margin-bottom: 8px;
+  fill: currentColor; /* SVGの色を親要素のcolorに合わせる */
+}
+.action-button span {
+  font-size: 0.8em;
+  text-transform: uppercase; /* 文字を大文字に */
+  letter-spacing: 0.5px;
+}
+
+.action-button:hover {
+  color: #FFFFFF;
+}
+
+.skip-button svg {
+  /* fill: #B3B3B3; */ /* 個別の色は不要、currentColorで制御 */
+}
+
+.like-button svg {
+  /* fill: #1DB954; */ /* Spotifyの緑色、またはcurrentColor */
+}
+.like-button.liked svg { /* いいねされた状態のスタイル */
+    fill: #1DB954; /* Spotifyグリーン */
+    color: #1DB954;
+}
+.like-button.liked span {
+    color: #1DB954;
+}
+
+
+.up-next {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.up-next h3 {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 15px;
+  text-align: left;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #282828; /* 区切り線 */
+}
+
+.up-next-items {
+  display: grid; /* Gridレイアウトに変更 */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* レスポンシブなカラム */
+  gap: 20px; /* アイテム間のスペース */
+}
+
+.up-next-item {
+  background-color: #181818; /* Spotifyのカード背景色 */
+  border-radius: 6px;
+  padding: 15px;
+  transition: background-color 0.2s ease-in-out;
+  min-height: 120px; /* 最小の高さを設定 */
+  display: flex; /* 内容を配置しやすくするため */
+  align-items: center; /* 垂直中央揃え（ダミーコンテンツ用） */
+  justify-content: center; /* 水平中央揃え（ダミーコンテンツ用） */
+  color: #B3B3B3; /* ダミーテキストの色 */
+}
+
+.up-next-item:hover {
+  background-color: #282828; /* ホバー時の背景色 */
+}
+
+/* Responsive adjustments for player page */
+@media (max-width: 768px) {
+  .player-content {
+    padding: 20px;
+  }
+  .song-title {
+    font-size: 1.6em;
+  }
+  .artist-name {
+    font-size: 1em;
+  }
+  .album-art-section {
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-container {
+    padding-top: 60px; /* スマホではヘッダーが少し小さい場合 */
+  }
+  .player-content {
+    padding: 15px;
+  }
+  .song-title {
+    font-size: 1.4em;
+  }
+  .artist-name {
+    font-size: 0.9em;
+  }
+  .album-art-section {
+    max-width: 100%; /* 画面幅いっぱいに */
+    padding-left: 10px; /* 少し余白 */
+    padding-right: 10px;
+  }
+  .player-actions {
+    gap: 25px;
+  }
+  .action-button svg {
+    width: 28px;
+    height: 28px;
+  }
+  .up-next h3 {
+    font-size: 1.2em;
+  }
+  .up-next-items {
+    grid-template-columns: 1fr; /* スマホでは1カラム */
+  }
+}
