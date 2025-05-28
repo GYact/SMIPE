@@ -1,0 +1,43 @@
+.login-container {
+  background-color: #000;
+  margin: 0;
+  padding: 0;
+  font-family: "Hiragino Kaku Gothic ProN";
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.login-container h1 {
+  font-size: 45px;
+  color: #20ff20;
+  opacity: 0.7;
+  margin-bottom: 30px;
+}
+
+.logo {
+  width: 200px;
+  margin-bottom: 100px;
+}
+
+.fab {
+  margin-right: 5px;
+}
+
+.login-link {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #000000;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: bold;
+  border: 2px solid white;
+}
+
+.login-link:hover {
+  background-color: #545454;
+}

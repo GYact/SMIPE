@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   root 'static_pages#home'
   get '/auth/:provider/callback', to: 'sessions#create'
   get '/logout', to: 'sessions#destroy'
+  get 'show', to: 'users#show'
   
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
