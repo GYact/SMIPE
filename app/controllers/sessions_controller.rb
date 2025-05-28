@@ -27,20 +27,20 @@ def create
     else
       flash[:danger] = "予期せぬエラーが発生しました"
     end
-    redirect_to root_url
+    redirect_to show_path
   end
 end
 
 def destroy
   log_out if logged_in?
   flash[:success] = "ログアウトしました"
-  redirect_to root_url
+  redirect_to show_path
 end
 
 #ログイン処理
 def login
   if logged_in?
-    redirect_to player_path
+    redirect_to show_path
   end
 end
 
