@@ -11,8 +11,7 @@
     <%= yield :head %>
 
     <%= favicon_link_tag('favicon.ico') %>
-    <link rel="icon" href="app/assets/images/smipe.png" type="image/png">
-    <link rel="icon" href="app/assets/images/smipe.png" type="image/svg+xml">
+    <link rel="icon" href="<%= asset_path('smipe.png') %>" type="image/png">
     <link rel="apple-touch-icon" href="app/assets/images/smipe.png">
 
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
