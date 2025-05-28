@@ -36,4 +36,12 @@ def destroy
   flash[:success] = "ログアウトしました"
   redirect_to root_url
 end
+
+#ログイン処理
+def login
+  if logged_in?
+    redirect_to player_path
+  end
+end
+
 end
