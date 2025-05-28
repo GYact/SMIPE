@@ -174,23 +174,22 @@
     height: 20px;
   }
   .header-smipe-logo {
-      width: 30px; /* ロゴサイズを調整 */
+      width: 30px;
       height: 30px;
   }
    .header-site-name {
-      font-size: 1.1em; /* サイト名をさらに小さく */
-      /* display: none; */ /* 必要であればサイト名を非表示にすることも検討 */
+      font-size: 1.1em;
   }
   .user-avatar-placeholder {
-      width: 24px; /* アバターサイズを調整 */
+      width: 24px;
       height: 24px;
       margin-right: 8px;
   }
   .header-username {
-      display: none; /* ユーザー名を非表示に */
+      display: none;
   }
   .header-logout-link {
-      padding: 6px 10px; /* ログアウトボタンのパディングを調整 */
-      font-size: 0.8em; /* ログアウトボタンのフォントサイズを調整 */
+      padding: 6px 10px;
+      font-size: 0.8em;
   }
 }

@@ -1,12 +1,11 @@
-/* filepath: /Users/yunisuta/SMIPE/app/assets/stylesheets/pages/_player.css */
 .player-container {
-  background-color: #121212; /* Spotifyのダーク背景色 */
+  background-color: #121212;
   color: #FFFFFF;
   font-family: 'CircularSp', 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Spotify風フォント（フォントがシステムにない場合は代替） */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: 70px; /* ヘッダー分のスペースを確保 */
+  padding-top: 70px;
 }
 
 .player-content {
@@ -15,8 +14,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 900px; /* コンテンツの最大幅を調整 */
-  margin: 0 auto; /* 中央揃え */
+  max-width: 900px;
+  margin: 0 auto;
   width: 100%;
 }
 
@@ -25,25 +24,25 @@
   text-align: center;
   margin-bottom: 30px;
   width: 100%;
-  max-width: 350px; /* アルバムアートの最大サイズ */
+  max-width: 350px;
 }
 
 .album-image {
   width: 100%;
   height: auto;
-  border-radius: 8px; /* 角丸 */
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); /* 影を追加 */
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   display: block;
 }
 
 .track-details {
-  margin-top: 20px; /* 画像とのスペース */
+  margin-top: 20px;
   text-align: center;
 }
 
 .song-title {
-  font-size: 1.8em; /* 曲名を大きく */
-  font-weight: 700; /* 太字 */
+  font-size: 1.8em;
+  font-weight: 700;
   margin: 0 0 5px 0;
   color: #FFFFFF;
 }
@@ -52,17 +51,17 @@
   font-size: 1.1em;
   font-weight: 400;
   margin: 0;
-  color: #B3B3B3; /* アーティスト名は少し薄く */
+  color: #B3B3B3;
 }
 
 .player-actions {
   display: flex;
-  justify-content: center; /* 中央揃え */
+  justify-content: center;
   align-items: center;
   width: 100%;
-  max-width: 300px; /* ボタンセクションの幅 */
+  max-width: 300px;
   margin-bottom: 40px;
-  gap: 30px; /* ボタン間のスペース */
+  gap: 30px;
 }
 
 .action-button {
@@ -74,18 +73,18 @@
   flex-direction: column;
   align-items: center;
   transition: color 0.2s ease-in-out;
-  padding: 0; /* パディングをリセット */
+  padding: 0;
 }
 
 .action-button svg {
-  width: 32px; /* アイコンサイズ調整 */
+  width: 32px;
   height: 32px;
   margin-bottom: 8px;
-  fill: currentColor; /* SVGの色を親要素のcolorに合わせる */
+  fill: currentColor;
 }
 .action-button span {
   font-size: 0.8em;
-  text-transform: uppercase; /* 文字を大文字に */
+  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
@@ -93,21 +92,13 @@
   color: #FFFFFF;
 }
 
-.skip-button svg {
-  /* fill: #B3B3B3; */ /* 個別の色は不要、currentColorで制御 */
-}
-
-.like-button svg {
-  /* fill: #1DB954; */ /* Spotifyの緑色、またはcurrentColor */
-}
-.like-button.liked svg { /* いいねされた状態のスタイル */
-    fill: #1DB954; /* Spotifyグリーン */
+.like-button.liked svg {
+    fill: #1DB954;
     color: #1DB954;
 }
 .like-button.liked span {
     color: #1DB954;
 }
-
 
 .up-next {
   width: 100%;
@@ -121,29 +112,29 @@
   margin-bottom: 15px;
   text-align: left;
   padding-bottom: 10px;
-  border-bottom: 1px solid #282828; /* 区切り線 */
+  border-bottom: 1px solid #282828;
 }
 
 .up-next-items {
-  display: grid; /* Gridレイアウトに変更 */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* レスポンシブなカラム */
-  gap: 20px; /* アイテム間のスペース */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 
 .up-next-item {
-  background-color: #181818; /* Spotifyのカード背景色 */
+  background-color: #181818;
   border-radius: 6px;
   padding: 15px;
   transition: background-color 0.2s ease-in-out;
-  min-height: 120px; /* 最小の高さを設定 */
-  display: flex; /* 内容を配置しやすくするため */
-  align-items: center; /* 垂直中央揃え（ダミーコンテンツ用） */
-  justify-content: center; /* 水平中央揃え（ダミーコンテンツ用） */
-  color: #B3B3B3; /* ダミーテキストの色 */
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #B3B3B3;
 }
 
 .up-next-item:hover {
-  background-color: #282828; /* ホバー時の背景色 */
+  background-color: #282828;
 }
 
 /* Responsive adjustments for player page */
@@ -164,7 +155,7 @@
 
 @media (max-width: 480px) {
   .player-container {
-    padding-top: 60px; /* スマホではヘッダーが少し小さい場合 */
+    padding-top: 60px;
   }
   .player-content {
     padding: 15px;
@@ -176,8 +167,8 @@
     font-size: 0.9em;
   }
   .album-art-section {
-    max-width: 100%; /* 画面幅いっぱいに */
-    padding-left: 10px; /* 少し余白 */
+    max-width: 100%;
+    padding-left: 10px;
     padding-right: 10px;
   }
   .player-actions {
@@ -191,6 +182,6 @@
     font-size: 1.2em;
   }
   .up-next-items {
-    grid-template-columns: 1fr; /* スマホでは1カラム */
+    grid-template-columns: 1fr;
   }
 }
