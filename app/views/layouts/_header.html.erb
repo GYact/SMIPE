@@ -9,15 +9,15 @@
             <rect y="60" width="100" height="15"></rect>
           </svg>
         </button>
-        <%= link_to root_path, class: "header-logo-link" do %>
-          <%= image_tag 'smipe.png', class: 'header-smipe-logo', alt: 'SMIPE Logo', size: '40x40' %>
+        <%= link_to player_page_path, class: "header-logo-link" do %>
+          <%= image_tag 'SMIPE_logo.png', class: 'header-smipe-logo', alt: 'SMIPE Logo', size: '40x40' %>
           <span class="header-site-name">SMIPE</span>
         <% end %>
       </div>
 
       <nav class="mobile-nav" id="mobileNavMenu" aria-hidden="true">
         <ul class="mobile-nav-list">
-          <li><%= link_to "Home", root_path, class: "mobile-nav-item" %></li>
+          <li><%= link_to "Home", player_page_path, class: "mobile-nav-item" %></li>
           <li><%= link_to "Browse", "#", class: "mobile-nav-item" %></li>
           <li><%= link_to "My Library", "#", class: "mobile-nav-item" %></li>
         </ul>
@@ -30,10 +30,6 @@
         <span class="header-username"><%= current_user.try(:name) || "User" %></span>
         <%= link_to "Logout", logout_path, data: { turbo_method: :delete }, class: "header-logout-link" %>
       </div>
-    </div>
-  <% else %>
-    <div class="header-inner-container logged-out">
-      <%= link_to 'Spotifyでログイン', '/auth/spotify', class: 'spotify-login-link' %>
     </div>
   <% end %>
 </header>
