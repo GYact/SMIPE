@@ -2,17 +2,30 @@
 
   <main class="player-content">
     <div class="album-art-section">
-      <%= image_tag "image.png", alt: "Album Art", class: "album-image" %>
-      <div class="track-details">
-        <p class="song-title">銃の部品</p>
-        <p class="artist-name">PEOPLE 1</p>
-      </div>
+      <% if @current_track&.track %>
+        <%= image_tag @current_track.track.album.images.first&.fetch('url', asset_path('image.png')), 
+            alt: "Album Art", class: "album-image" %>
+        <div class="track-details">
+          <p class="song-title"><%= @current_track.track.name %></p>
+          <p class="artist-name"><%= @current_track.track.artists.map(&:name).join(', ') %></p>
+        </div>
+      <% else %>
+        <%= image_tag "image.png", alt: "Album Art", class: "album-image" %>
+        <div class="track-details">
+          <p class="song-title">再生中の楽曲がありません</p>
+          <p class="artist-name">Spotifyで音楽を再生してください</p>
+        </div>
+      <% end %>
     </div>
 
     <div class="player-actions">
-      <button class="action-button skip-button">
+      <button class="action-button skip-button" onclick="skipTrack()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
         <span>Skip</span>
+      </button>
+      <button class="action-button pause-button" onclick="pauseTrack()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span>Pause</span>
       </button>
       <button class="action-button like-button">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
@@ -21,13 +34,85 @@
     </div>
 
     <section class="up-next">
-      <h3>Up Next</h3>
+      <h3>最近再生した楽曲</h3>
       <div class="up-next-items">
-        <div class="up-next-item">
-        </div>
-        <div class="up-next-item">
-        </div>
+        <% @queue.each do |item| %>
+          <div class="up-next-item" onclick="playTrack('<%= item.track.uri %>')">
+            <div class="track-info">
+              <img src="<%= item.track.album.images.last&.fetch('url', asset_path('image.png')) %>
+                   alt="<%= item.track.name %>" class="track-thumbnail">
+              <div class="track-details">
+                <p class="track-name"><%= item.track.name %></p>
+                <p class="track-artist"><%= item.track.artists.map(&:name).join(', ') %></p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </section>
+
+    <section class="playlists">
+      <h3>プレイリスト</h3>
+      <div class="playlist-items">
+        <% @playlists.each do |playlist| %>
+          <%= link_to playlist_path(playlist.id), class: "playlist-item-link" do %>
+            <div class="playlist-item">
+              <img src="<%= playlist.images.first&.fetch('url', nil) || asset_path('image.png') %>"
+                   alt="<%= playlist.name %>" class="playlist-thumbnail">
+              <div class="playlist-info">
+                <p class="playlist-name"><%= playlist.name %></p>
+                <p class="playlist-tracks"><%= playlist.total %> 曲</p>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
       </div>
     </section>
   </main>
 </div>
+
+<script>
+  function skipTrack() {
+    fetch('/player/skip', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      }
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          location.reload();
+        }
+      });
+  }
+
+  function pauseTrack() {
+    fetch('/player/pause', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      }
+    }).then(response => response.json())
+      .then(data => console.log(data));
+  }
+
+  function playTrack(trackUri) {
+    // この playTrack 関数は playlists/show.html.erb にも同様のものを配置するか、
+    // application.js など共通の場所に移動することを検討してください。
+    fetch('/player/play_track', { // player_controller の play_track アクションのパスを確認
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ track_uri: trackUri })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          location.reload();
+        }
+      });
+  }
+</script>

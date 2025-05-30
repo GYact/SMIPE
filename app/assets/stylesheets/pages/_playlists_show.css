@@ -1,0 +1,216 @@
+/* filepath: app/assets/stylesheets/pages/_playlists_show.css */
+
+/* New wrapper for the entire playlist show page */
+.playlist-show-page-wrapper {
+  background-color: #121212; /* Player pageと同じ背景色 */
+  color: #FFFFFF;
+  font-family: 'CircularSp', 'Helvetica Neue', Helvetica, Arial, sans-serif; /* Player pageと同じフォント */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 70px; /* ヘッダーの高さに合わせて調整 (Player pageと同じ想定) */
+  box-sizing: border-box;
+}
+
+.playlist-detail-container {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #181818; /* Spotify風ダークテーマ */
+  border-radius: 8px;
+  color: #fff;
+}
+
+.playlist-header {
+  display: flex;
+  align-items: flex-end; /* 画像と情報を下揃え */
+  margin-bottom: 30px;
+  gap: 20px;
+}
+
+.playlist-header-image .playlist-cover-art-large {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.playlist-header-info {
+  flex-grow: 1;
+}
+
+.playlist-header-info h1 {
+  font-size: 2.5em;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.playlist-description {
+  font-size: 0.9em;
+  color: #b3b3b3;
+  margin-bottom: 10px;
+  max-height: 60px; /* 複数行の場合の表示制御 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-meta {
+  font-size: 0.85em;
+  color: #b3b3b3;
+  margin-bottom: 20px;
+}
+
+.play-all-button {
+  background-color: #1DB954; /* Spotifyグリーン */
+  color: #FFFFFF;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 500px; /* 丸みを帯びたボタン */
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.play-all-button:hover {
+  background-color: #1ed760;
+}
+
+.track-list-section h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #333;
+}
+
+.track-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.track-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.track-item:hover {
+  background-color: #282828;
+}
+
+.track-item-number {
+  width: 30px;
+  text-align: right;
+  margin-right: 15px;
+  color: #b3b3b3;
+  font-size: 0.9em;
+}
+
+.track-item-thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 3px;
+  margin-right: 15px;
+}
+
+.track-item-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.track-item-name {
+  font-size: 1em;
+  font-weight: 500;
+  color: #fff;
+}
+
+.track-item-artist {
+  font-size: 0.85em;
+  color: #b3b3b3;
+}
+
+.track-item-duration {
+  font-size: 0.9em;
+  color: #b3b3b3;
+  margin-left: 15px;
+}
+
+/* リンクのデフォルトスタイルをリセットするためのクラス（player/show.html.erbで使用） */
+.playlist-item-link {
+  text-decoration: none;
+  color: inherit; /* 親要素の色を継承 */
+  display: block; /* リンク領域をブロック要素に */
+}
+
+/* Responsive adjustments for playlist detail page */
+@media (max-width: 768px) {
+  .playlist-detail-container {
+    padding: 15px;
+    margin: 15px;
+  }
+  .playlist-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .playlist-header-image .playlist-cover-art-large {
+    width: 180px;
+    height: 180px;
+    margin-bottom: 15px;
+  }
+  .playlist-header-info h1 {
+    font-size: 2em;
+  }
+  .track-list-section h2 {
+    font-size: 1.3em;
+  }
+  .track-item-name {
+    font-size: 0.95em;
+  }
+  .track-item-artist,
+  .track-item-duration,
+  .track-item-number {
+    font-size: 0.8em;
+  }
+}
+
+@media (max-width: 480px) {
+  .playlist-detail-container {
+    padding: 10px;
+    margin: 10px;
+    border-radius: 0;
+  }
+  .playlist-header-image .playlist-cover-art-large {
+    width: 150px;
+    height: 150px;
+  }
+  .playlist-header-info h1 {
+    font-size: 1.8em;
+  }
+  .play-all-button {
+    padding: 10px 20px;
+    font-size: 0.9em;
+  }
+  .track-list-section h2 {
+    font-size: 1.2em;
+  }
+  .track-item {
+    padding: 8px 3px;
+  }
+  .track-item-thumbnail {
+    width: 35px;
+    height: 35px;
+    margin-right: 10px;
+  }
+  .track-item-number {
+    margin-right: 10px;
+  }
+}

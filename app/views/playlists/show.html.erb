@@ -1,0 +1,115 @@
+<div class="playlist-show-page-wrapper">
+  <div class="playlist-detail-container">
+    <% if @playlist %>
+      <header class="playlist-header">
+        <div class="playlist-header-image">
+          <% if @playlist.images.any? %>
+            <%= image_tag @playlist.images.first['url'], alt: @playlist.name, class: "playlist-cover-art-large" %>
+          <% else %>
+            <%= image_tag asset_path('image.png'), alt: "No image", class: "playlist-cover-art-large" %>
+          <% end %>
+        </div>
+        <div class="playlist-header-info">
+          <h1><%= @playlist.name %></h1>
+          <% if @playlist.description.present? %>
+            <p class="playlist-description"><%= @playlist.description %></p>
+          <% end %>
+          <p class="playlist-meta">
+            作成者: <%= @playlist.owner.display_name || @playlist.owner.id %>
+            - <%= @playlist.total %> 曲
+          </p>
+          <% if @tracks.any? %>
+            <button class="play-all-button" onclick="playPlaylistTracks(['<%= @tracks.map(&:uri).join("','") %>'])">
+              すべて再生
+            </button>
+          <% end %>
+        </div>
+      </header>
+
+      <section class="track-list-section">
+        <h2>収録曲</h2>
+        <% if @tracks.any? %>
+          <ol class="track-list">
+            <% @tracks.each_with_index do |track, index| %>
+              <% next unless track # APIからnilが返ってくる場合があるため %>
+              <li class="track-item" onclick="playTrack('<%= track.uri %>')">
+                <div class="track-item-number"><%= index + 1 %></div>
+                <% if track.album&.images&.any? %>
+                  <%= image_tag track.album.images.last['url'], alt: track.name, class: "track-item-thumbnail" %>
+                <% else %>
+                  <%= image_tag asset_path('image.png'), alt: "No image", class: "track-item-thumbnail" %>
+                <% end %>
+                <div class="track-item-info">
+                  <span class="track-item-name"><%= track.name %></span>
+                  <span class="track-item-artist"><%= track.artists.map(&:name).join(', ') %></span>
+                </div>
+                <div class="track-item-duration"><%= Time.at(track.duration_ms / 1000).strftime('%M:%S') %></div>
+              </li>
+            <% end %>
+          </ol>
+        <% else %>
+          <p>このプレイリストには曲がありません。</p>
+        <% end %>
+      </section>
+    <% else %>
+      <p>プレイリスト情報を読み込めませんでした。</p>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  // 既存の player/show.html.erb にあるJavaScript関数をこちらにも定義するか、
+  // application.js など共通の場所に移動することを検討してください。
+  function playTrack(trackUri) {
+    fetch('/player/play_track', { // player_controller の play_track アクションのパスを確認
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ track_uri: trackUri })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          // 再生成功時のフィードバック（例：現在の再生情報を更新するなど）
+          // ここでは player ページにリダイレクトするか、UIを更新するか検討
+          console.log('Playback started for URI:', trackUri);
+          // 必要であれば player ページに遷移して再生状態を反映
+          // window.location.href = '<%= player_path %>';
+        } else {
+          alert('再生に失敗しました: ' + data.message);
+        }
+      }).catch(error => {
+        console.error('Error playing track:', error);
+        alert('再生リクエスト中にエラーが発生しました。');
+      });
+  }
+
+  function playPlaylistTracks(trackUris) {
+    if (!trackUris || trackUris.length === 0) {
+      alert('再生する曲がありません。');
+      return;
+    }
+    fetch('/player/play_track', { // player_controller の play_track アクションのパスを確認
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      // 複数のURIを再生キューに追加する (Spotify APIの仕様に依存)
+      // RSpotifyの play! メソッドは uris: 配列を受け付けます
+      body: JSON.stringify({ uris: trackUris })
+    }).then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          console.log('Playlist playback started.');
+          // window.location.href = '<%= player_path %>'; // Playerページに遷移して再生状態を確認
+        } else {
+          alert('プレイリストの再生に失敗しました: ' + data.message);
+        }
+      }).catch(error => {
+        console.error('Error playing playlist:', error);
+        alert('プレイリスト再生リクエスト中にエラーが発生しました。');
+      });
+  }
+</script>
