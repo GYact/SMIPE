@@ -10,8 +10,10 @@ Rails.application.routes.draw do
   resource :player, only: [:show] do
     collection do
       post :play_track, as: :play
+      post :play_playlist
       post :pause
       post :skip
+      get :token
     end
   end
 
