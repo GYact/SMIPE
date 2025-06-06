@@ -364,6 +364,8 @@ GEM
     stimulus-rails (1.3.4)
       railties (>= 6.0.0)
     stringio (3.1.7)
+    swiper-rails (1.0.4)
+      rails (>= 3.1)
     thor (1.3.2)
     thruster (0.1.13)
     thruster (0.1.13-aarch64-linux)
@@ -429,6 +431,7 @@ DEPENDENCIES
   solid_queue
   sqlite3 (>= 2.1)
   stimulus-rails
+  swiper-rails
   thruster
   turbo-rails
   tzinfo-data

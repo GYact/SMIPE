@@ -1,33 +1,42 @@
 <div class="player-container">
 
   <main class="player-content">
-    <div class="album-art-section">
-      <%= image_tag "image.png", alt: "Album Art", class: "album-image" %>
-      <div class="track-details">
-        <p class="song-title">銃の部品</p>
-        <p class="artist-name">PEOPLE 1</p>
-      </div>
-    </div>
-
-    <div class="player-actions">
-      <button class="action-button skip-button">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-        <span>Skip</span>
-      </button>
-      <button class="action-button like-button">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>
-        <span>Like</span>
-      </button>
-    </div>
-
-    <section class="up-next">
-      <h3>Up Next</h3>
-      <div class="up-next-items">
-        <div class="up-next-item">
+    <div class="swiper" data-controller="play-track">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide">
+          <div class="album-art-section">
+            <%= image_tag "image1.png", alt: "Album Art", class: "album-image" %>
+            <div class="track-details">
+              <p class="song-title">銃の部品</p>
+              <p class="artist-name">PEOPLE 1</p>
+            </div>
+          </div>
         </div>
-        <div class="up-next-item">
+        <div class="swiper-slide">
+          <div class="album-art-section">
+            <%= image_tag "image2.jpg", alt: "Album Art", class: "album-image" %>
+            <div class="track-details">
+              <p class="song-title">別の曲のタイトル</p>
+              <p class="artist-name">別のアーティスト</p>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-slide">
+          <div class="album-art-section">
+            <%= image_tag "image3.jpg", alt: "Album Art", class: "album-image" %>
+            <div class="track-details">
+              <p class="song-title">さらに別の曲</p>
+              <p class="artist-name">Test Artist C</p>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
+
+      <div class="swiper-pagination"></div>
+
+      <div class="swiper-button-prev"></div>
+      <div class="swiper-button-next"></div>
+    </div>
   </main>
 </div>
+

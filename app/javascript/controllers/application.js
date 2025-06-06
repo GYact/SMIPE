@@ -1,4 +1,5 @@
 import { Application } from "@hotwired/stimulus"
+import Swiper from 'swiper';
 
 const application = Application.start()
 
