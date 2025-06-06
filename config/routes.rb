@@ -5,5 +5,5 @@ Rails.application.routes.draw do
   get 'show', to: 'users#show'
   get "up" => "rails/health#show", as: :rails_health_check
   get '/static_pages/home', to: 'static_pages#home', as: 'static_pages_home'
-  get '/player', to: 'player#show', as: 'player_page'
+  get 'player', to: 'player#show', as: :player_page
 end
