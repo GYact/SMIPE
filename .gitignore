@@ -125,5 +125,4 @@ build-iPhoneSimulator/
 # .rubocop-https?--*
 
 # End of https://www.toptal.com/developers/gitignore/api/ruby,rails
-
-Explain
+/.DS_Store
