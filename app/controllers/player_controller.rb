@@ -4,21 +4,21 @@ class PlayerController < ApplicationController
   def show
   if session[:spotify_user_data]
     @spotify_user = RSpotify::User.new(session[:spotify_user_data])
-      @playlist = @spotify_user.playlists(limit: 1)&.first
-      puts "DEBUG: Playlist name = #{@playlist&.name}"
-      puts "DEBUG: Playlist id = #{@playlist&.id}"
-      if @playlist
-        tracks = @playlist.tracks
-        puts "DEBUG: Tracks count = #{tracks.size}"
-  
-        @first_track = tracks.first
-        @first_track_uri = @first_track&.uri
-        @all_track_uris = tracks.map(&:uri)
-      else
-        @first_track = nil
-        @first_track_uri = nil
-        @all_track_uris = []
-      end
+      @playlists = @spotify_user.playlists
+      @all_track_uris = []
+    @playlists.each do |playlist|
+      tracks = playlist.tracks
+      @all_track_uris.concat(tracks.map(&:uri))
+    end
+
+    first_playlist = @playlists.first
+    if first_playlist && first_playlist.tracks.any?
+      @first_track = first_playlist.tracks.first
+      @first_track_uri = @first_track.uri
+    else
+      @first_track = nil
+      @first_track_uri = nil
+    end
       @access_token = session[:spotify_user_data]["credentials"]["token"]
     else
       redirect_to root_path, alert: "Spotifyセッションが無効です。"
