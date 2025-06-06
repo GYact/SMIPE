@@ -1,0 +1,28 @@
+<div data-controller="map" class="map-container">
+  <div class="map-wrapper">
+    <div id="map" style="height:600px;"></div>
+  </div>
+  
+  <div class="location-info">
+    <h3>位置情報</h3>
+    <div data-map-target="locationDisplay" id="location-display">
+      <% if @user_location && @user_location[:latitude] != 0 && @user_location[:longitude] != 0 %>
+        <div class="coordinates">
+          <strong>保存された位置:</strong><br>
+          緯度: <%= @user_location[:latitude].round(4) %><br>
+          経度: <%= @user_location[:longitude].round(4) %>
+        </div>
+      <% else %>
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>位置情報を取得中...</p>
+        </div>
+      <% end %>
+    </div>
+    <button data-map-target="updateButton" 
+            data-action="click->map#updateLocation" 
+            class="update-button">位置を更新</button>
+    <div data-map-target="statusMessage" id="statusMessage"></div>
+  </div>
+</div>
+
