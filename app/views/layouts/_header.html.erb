@@ -1,5 +1,5 @@
-<header class="header">
-  <% if logged_in? %>
+<% if logged_in? %>
+  <header class="header">
     <div class="header-inner-container">
       <div class="logo-and-nav">
         <button class="hamburger-menu" id="hamburgerMenuButton" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNavMenu">
@@ -31,5 +31,5 @@
         <%= link_to "Logout", logout_path, data: { turbo_method: :delete }, class: "header-logout-link" %>
       </div>
     </div>
-  <% end %>
-</header>
+  </header>
+<% end %>

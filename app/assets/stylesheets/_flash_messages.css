@@ -1,0 +1,63 @@
+.flash-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 2000;
+  width: 300px;
+}
+
+.flash-message {
+  margin-bottom: 15px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  color: #fff;
+  font-family: "Gotham", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  animation: slideIn 0.5s ease-out;
+}
+
+.flash-success {
+  background-color: #1DB954; /* Spotify Green */
+}
+
+.flash-error {
+  background-color: #d9534f;
+}
+
+.flash-notice {
+  background-color: #5bc0de;
+}
+
+.flash-alert {
+  background-color: #f0ad4e;
+}
+
+.close-flash {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.8;
+  padding: 0 0 0 15px;
+}
+
+.close-flash:hover {
+  opacity: 1;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+} 

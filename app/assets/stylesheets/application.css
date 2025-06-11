@@ -7,6 +7,7 @@
 @import "custom.css";
 @import "maps.css";
 @import "_header.css";
+@import "_flash_messages.css";
 
 body {
     margin: 0;

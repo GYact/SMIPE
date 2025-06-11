@@ -1,0 +1,8 @@
+<div class="flash-container">
+  <% flash.each do |message_type, message| %>
+    <div class="flash-message flash-<%= message_type %>">
+      <span><%= message %></span>
+      <button class="close-flash" onclick="this.parentElement.style.display='none';">&times;</button>
+    </div>
+  <% end %>
+</div> 
