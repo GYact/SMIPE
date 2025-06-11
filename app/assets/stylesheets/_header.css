@@ -13,11 +13,11 @@
 
 .header-inner-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
   padding: 0 15px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header-inner-container.logged-out {
@@ -65,6 +65,7 @@
 .user-session-controls {
   display: flex;
   align-items: center;
+  margin-left: auto;
 }
 
 .user-avatar-placeholder {

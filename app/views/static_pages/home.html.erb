@@ -1,9 +1,38 @@
-<div class="login-container">
-  <h1>SMIPE</h1>
-  <img src="<%= asset_path('SMIPE_logo.png') %>" alt="SMIPE Logo" class="logo">
-  <div class="login-box">
-    <%= link_to '/auth/spotify', class: 'login-link' do %>
-      <span class="fab fa-spotify"></span> Spotifyでログイン
-    <% end %>
+<div class="hero">
+  <div class="hero-content">
+    <h1 class="app-title">SMIPE</h1>
+    <p class="app-tagline">音楽で、世界とつながる。あなたのいる場所が、新しいプレイリストになる。</p>
+    <div class="login-box">
+      <% unless logged_in? %>
+        <%= link_to '/auth/spotify', class: 'login-link' do %>
+          <i class="fab fa-spotify"></i> Spotifyでログイン
+        <% end %>
+      <% end %>
+    </div>
   </div>
 </div>
+
+<section class="features">
+  <h2 class="section-title">SMIPEでできること</h2>
+  <div class="feature-grid">
+    <div class="feature-item">
+      <i class="fas fa-map-marker-alt feature-icon"></i>
+      <h3>現在地を共有</h3>
+      <p>あなたのいる場所を友達と共有し、近くにいる人を見つけよう。</p>
+    </div>
+    <div class="feature-item">
+      <i class="fas fa-music feature-icon"></i>
+      <h3>音楽を発見</h3>
+      <p>他の人が聴いている音楽から、新しいお気に入りを見つけよう。</p>
+    </div>
+    <div class="feature-item">
+      <i class="fas fa-users feature-icon"></i>
+      <h3>友達とつながる</h3>
+      <p>共通の音楽の好みを持つ友達と、もっと深くつながろう。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>&copy; 2024 SMIPE. All Rights Reserved.</p>
+</footer>
