@@ -8,4 +8,5 @@ Rails.application.routes.draw do
   get '/static_pages/home', to: 'static_pages#home', as: 'static_pages_home'
   get '/player', to: 'player#show', as: 'player_page'
   get 'map', to: 'maps#index'
+  get '/login', to: 'sessions#login', as: 'login'
 end
