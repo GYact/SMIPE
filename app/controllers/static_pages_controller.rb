@@ -8,7 +8,6 @@ class StaticPagesController < ApplicationController
         # Spotifyセッションがない場合は、ログアウトして再認証を促す
         log_out
         session.delete(:spotify_user_data)
-        flash[:warning] = "Spotifyとの連携が必要です。再度ログインしてください。"
       end
     end
   end

@@ -32,7 +32,6 @@ class PlayerController < ApplicationController
       # Spotifyセッションがない場合は、ログアウトして再認証を促す
       log_out
       session.delete(:spotify_user_data)
-      flash[:warning] = "Spotifyとの連携が必要です。再度ログインしてください。"
       redirect_to root_path
     end
   end
@@ -41,7 +40,7 @@ class PlayerController < ApplicationController
 
   def require_login
     unless logged_in?
-      redirect_to root_path, alert: "ログインが必要です。"
+      redirect_to root_path
     end
   end
 end

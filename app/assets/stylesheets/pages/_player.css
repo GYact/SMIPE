@@ -25,6 +25,10 @@
   margin-bottom: 30px;
   width: 100%;
   max-width: 350px;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .album-image {
