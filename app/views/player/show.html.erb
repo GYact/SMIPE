@@ -24,13 +24,13 @@
         </svg>
         <span>Play</span>
       </button>
-      <button class="action-button skip-button">
+      <button class="action-button skip-button" id="skip-button">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
         </svg>
         <span>Skip</span>
       </button>
-      <button class="action-button like-button">
+      <button class="action-button like-button" id="like-button">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>
         </svg>
@@ -40,7 +40,7 @@
     
     <section class="up-next">
       <h3>Up Next</h3>
-      <div class="up-next-items">
+      <div class="up-next-items" id="up-next-items">
         <!-- Up Next items will be inserted here dynamically -->
       </div>
     </section>
@@ -62,6 +62,7 @@
       let device_id = null;
       let currentIndex = 0;
       let isPlaying = true;
+      let isLiked = false;
 
       window.onSpotifyWebPlaybackSDKReady = () => {
         const player = new Spotify.Player({
@@ -70,15 +71,13 @@
           volume: 0.5
         });
 
-        // プレイヤー準備完了時にdevice_idを取得し、即再生開始
         player.addListener('ready', ({ device_id: id }) => {
           device_id = id;
           console.log('Player ready with device ID', device_id);
-
-          // device_idを指定して再生を開始
           playCurrentTrack();
           updateUpNextDisplay();
           updateCurrentTrackDisplay(trackUris[currentIndex]);
+          checkIfTrackIsLiked(trackUris[currentIndex]);
         });
 
         player.addListener('initialization_error', ({ message }) => console.error(message));
@@ -91,7 +90,8 @@
         const playPauseBtn = document.getElementById('play-pause-btn');
         const playIcon = document.getElementById('play-icon');
         const pauseIcon = document.getElementById('pause-icon');
-        const skipButton = document.querySelector('.skip-button');
+        const skipButton = document.getElementById('skip-button');
+        const likeButton = document.getElementById('like-button');
 
         playPauseBtn.addEventListener('click', () => {
           if (isPlaying) {
@@ -118,6 +118,40 @@
           console.log(`Skipping to track index ${currentIndex}`);
           playCurrentTrack();
           updateUpNextDisplay();
+          checkIfTrackIsLiked(trackUris[currentIndex]);
+          skipButton.style.color = '#1DB954';
+          setTimeout(() => {
+            skipButton.style.color = '#B3B3B3';
+          }, 500);
+        });
+
+        likeButton.addEventListener('click', () => {
+          const trackId = trackUris[currentIndex].split(':').pop();
+          if (!isLiked) {
+            // Add to library
+            fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }).then(() => {
+              isLiked = true;
+              likeButton.classList.add('liked');
+              likeButton.style.color = '#1DB954';
+            });
+          } else {
+            // Remove from library
+            fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            }).then(() => {
+              isLiked = false;
+              likeButton.classList.remove('liked');
+              likeButton.style.color = '#B3B3B3';
+            });
+          }
         });
 
         function playCurrentTrack() {
@@ -164,11 +198,32 @@
           .catch(err => console.error('Error updating current track display:', err));
         }
 
+        function checkIfTrackIsLiked(trackUri) {
+          const trackId = trackUri.split(':').pop();
+          fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          .then(response => response.json())
+          .then(results => {
+            isLiked = results[0];
+            if (isLiked) {
+              likeButton.classList.add('liked');
+              likeButton.style.color = '#1DB954';
+            } else {
+              likeButton.classList.remove('liked');
+              likeButton.style.color = '#B3B3B3';
+            }
+          })
+          .catch(err => console.error('Error checking if track is liked:', err));
+        }
+
         function updateUpNextDisplay() {
-          const upNextItems = document.querySelector('.up-next-items');
+          const upNextItems = document.getElementById('up-next-items');
           upNextItems.innerHTML = '';
 
-          for (let i = 1; i <= 2; i++) {
+          for (let i = 1; i <= 3; i++) {
             const nextIndex = (currentIndex + i) % trackUris.length;
             const trackUri = trackUris[nextIndex];
             const trackId = trackUri.split(':').pop();
@@ -182,26 +237,24 @@
             .then(trackData => {
               const itemDiv = document.createElement('div');
               itemDiv.classList.add('up-next-item');
-              itemDiv.style.display = 'flex';
-              itemDiv.style.alignItems = 'center';
-              itemDiv.style.marginBottom = '8px';
-
+              
               const img = document.createElement('img');
-              img.src = trackData.album.images[2]?.url || trackData.album.images[0]?.url || '';
+              img.src = trackData.album.images[0]?.url || '';
               img.alt = 'Album Art';
-              img.style.width = '50px';
-              img.style.height = '50px';
-              img.style.marginRight = '10px';
+              img.style.width = '60px';
+              img.style.height = '60px';
+              img.style.borderRadius = '4px';
+              img.style.marginRight = '15px';
 
               const textDiv = document.createElement('div');
+              textDiv.style.flex = '1';
               textDiv.innerHTML = `
-                <div style="font-weight: bold;">${trackData.name}</div>
-                <div style="font-size: 0.9em; color: #666;">${trackData.artists.map(a => a.name).join(', ')}</div>
+                <div style="font-weight: bold; color: #FFFFFF; margin-bottom: 4px;">${trackData.name}</div>
+                <div style="font-size: 0.9em; color: #B3B3B3;">${trackData.artists.map(a => a.name).join(', ')}</div>
               `;
 
               itemDiv.appendChild(img);
               itemDiv.appendChild(textDiv);
-
               upNextItems.appendChild(itemDiv);
             })
             .catch(err => console.error('Error loading next track info:', err));
