@@ -210,4 +210,216 @@
       };
     });
   </script>
+<div class="player-container">
+
+  <main class="player-content">
+    <div class="album-art-section">
+      <% if @first_track && @first_track.album && @first_track.album.images.any? %>
+        <%= image_tag @first_track.album.images.first['url'], alt: "Album Art", class: "album-image" %>
+      <% else %>
+        <%= image_tag "image.png", alt: "Album Art", class: "album-image" %>
+      <% end %>
+
+      <div class="track-details">
+        <p class="song-title"><%= @first_track&.name || 'No Track' %></p>
+        <p class="artist-name"><%= @first_track&.artists&.map(&:name)&.join(', ') || 'Unknown Artist' %></p>
+      </div>
+    </div>
+
+    <div class="player-actions">
+      <button id="play-pause-btn" class="action-button play-button">
+        <svg id="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <svg id="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+        <span>Play</span>
+      </button>
+      <button class="action-button skip-button">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+        </svg>
+        <span>Skip</span>
+      </button>
+      <button class="action-button like-button">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>
+        </svg>
+        <span>Like</span>
+      </button>
+    </div>
+    
+    <section class="up-next">
+      <h3>Up Next</h3>
+      <div class="up-next-items">
+        <!-- Up Next items will be inserted here dynamically -->
+      </div>
+    </section>
+  </main>
+</div>
+
+<% if @first_track_uri.present? && @all_track_uris.present? %>
+  <input type="hidden" id="all-track-uris" value='<%= @all_track_uris.to_json %>'>
+  <meta name="spotify-token" content="<%= @access_token %>">
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const tokenMeta = document.querySelector('meta[name="spotify-token"]');
+      const token = tokenMeta ? tokenMeta.content : null;
+      const trackUris = JSON.parse(document.getElementById('all-track-uris').value);
+
+      if (!token || !trackUris || trackUris.length === 0) return;
+
+      let device_id = null;
+      let currentIndex = 0;
+      let isPlaying = true;
+
+      window.onSpotifyWebPlaybackSDKReady = () => {
+        const player = new Spotify.Player({
+          name: 'SMIPE Player',
+          getOAuthToken: cb => { cb(token); },
+          volume: 0.5
+        });
+
+        // プレイヤー準備完了時にdevice_idを取得し、即再生開始
+        player.addListener('ready', ({ device_id: id }) => {
+          device_id = id;
+          console.log('Player ready with device ID', device_id);
+
+          // device_idを指定して再生を開始
+          playCurrentTrack();
+          updateUpNextDisplay();
+          updateCurrentTrackDisplay(trackUris[currentIndex]);
+        });
+
+        player.addListener('initialization_error', ({ message }) => console.error(message));
+        player.addListener('authentication_error', ({ message }) => console.error(message));
+        player.addListener('account_error', ({ message }) => console.error(message));
+        player.addListener('playback_error', ({ message }) => console.error(message));
+
+        player.connect();
+
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const skipButton = document.querySelector('.skip-button');
+
+        playPauseBtn.addEventListener('click', () => {
+          if (isPlaying) {
+            player.pause().then(() => {
+              console.log('Paused playback');
+              playIcon.style.display = 'block';
+              pauseIcon.style.display = 'none';
+              playPauseBtn.querySelector('span').innerText = 'Play';
+              isPlaying = false;
+            });
+          } else {
+            player.resume().then(() => {
+              console.log('Resumed playback');
+              playIcon.style.display = 'none';
+              pauseIcon.style.display = 'block';
+              playPauseBtn.querySelector('span').innerText = 'Pause';
+              isPlaying = true;
+            });
+          }
+        });
+
+        skipButton.addEventListener('click', () => {
+          currentIndex = (currentIndex + 1) % trackUris.length;
+          console.log(`Skipping to track index ${currentIndex}`);
+          playCurrentTrack();
+          updateUpNextDisplay();
+        });
+
+        function playCurrentTrack() {
+          if (!device_id) {
+            console.error('Device ID not ready');
+            return;
+          }
+
+          const currentTrackUri = trackUris[currentIndex];
+          fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              uris: [currentTrackUri]
+            })
+          }).then(() => {
+            console.log(`Now playing: ${currentTrackUri}`);
+            updateCurrentTrackDisplay(currentTrackUri);
+          }).catch(err => {
+            console.error('Playback start error:', err);
+          });
+        }
+
+        function updateCurrentTrackDisplay(trackUri) {
+          const trackId = trackUri.split(':').pop();
+
+          fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          .then(response => response.json())
+          .then(trackData => {
+            const albumImage = document.querySelector('.album-image');
+            albumImage.src = trackData.album.images[0]?.url || '';
+            albumImage.alt = trackData.name;
+
+            document.querySelector('.song-title').innerText = trackData.name;
+            document.querySelector('.artist-name').innerText = trackData.artists.map(a => a.name).join(', ');
+          })
+          .catch(err => console.error('Error updating current track display:', err));
+        }
+
+        function updateUpNextDisplay() {
+          const upNextItems = document.querySelector('.up-next-items');
+          upNextItems.innerHTML = '';
+
+          for (let i = 1; i <= 2; i++) {
+            const nextIndex = (currentIndex + i) % trackUris.length;
+            const trackUri = trackUris[nextIndex];
+            const trackId = trackUri.split(':').pop();
+
+            fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            })
+            .then(response => response.json())
+            .then(trackData => {
+              const itemDiv = document.createElement('div');
+              itemDiv.classList.add('up-next-item');
+              itemDiv.style.display = 'flex';
+              itemDiv.style.alignItems = 'center';
+              itemDiv.style.marginBottom = '8px';
+
+              const img = document.createElement('img');
+              img.src = trackData.album.images[2]?.url || trackData.album.images[0]?.url || '';
+              img.alt = 'Album Art';
+              img.style.width = '50px';
+              img.style.height = '50px';
+              img.style.marginRight = '10px';
+
+              const textDiv = document.createElement('div');
+              textDiv.innerHTML = `
+                <div style="font-weight: bold;">${trackData.name}</div>
+                <div style="font-size: 0.9em; color: #666;">${trackData.artists.map(a => a.name).join(', ')}</div>
+              `;
+
+              itemDiv.appendChild(img);
+              itemDiv.appendChild(textDiv);
+
+              upNextItems.appendChild(itemDiv);
+            })
+            .catch(err => console.error('Error loading next track info:', err));
+          }
+        }
+      };
+    });
+  </script>
 <% end %>
