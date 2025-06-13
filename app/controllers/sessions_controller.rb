@@ -10,8 +10,9 @@ class SessionsController < ApplicationController
    
     if user 
       log_in(user) 
+      session[:spotify_user_data] = user_data
       flash[:success] = "ログインしました" 
-      redirect_to player_page_path  # 修正
+      redirect_to player_page_path
    
     else 
       new_user = User.new( 
@@ -23,8 +24,9 @@ class SessionsController < ApplicationController
    
       if new_user.save 
         log_in(new_user) 
+        session[:spotify_user_data] = user_data
         flash[:success] = "ユーザー登録成功" 
-        redirect_to player_page_path  # 修正
+        redirect_to player_page_path
       else 
         flash[:danger] = "予期せぬエラーが発生しました" 
         redirect_to root_url
@@ -34,13 +36,16 @@ class SessionsController < ApplicationController
   
   def destroy 
     log_out if logged_in? 
+    session.delete(:spotify_user_data)
     flash[:success] = "ログアウトしました" 
     redirect_to root_url
   end 
   
-  def login 
-    if logged_in? 
-      redirect_to player_page_path  # 修正
-    end 
-  end 
+  def login
+    if logged_in?
+      redirect_to player_page_path
+    else
+      render 'static_pages/home'
+    end
+  end
 end

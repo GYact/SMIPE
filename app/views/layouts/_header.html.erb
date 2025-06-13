@@ -1,5 +1,5 @@
 <header class="header">
-  <% if logged_in? %>
+  <% if logged_in? && !current_page?(root_path) && !current_page?(login_path) %>
     <div class="header-inner-container">
       <div class="logo-and-nav">
         <button class="hamburger-menu" id="hamburgerMenuButton" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNavMenu">
