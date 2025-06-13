@@ -72,7 +72,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: color 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
   padding: 0;
 }
 
@@ -82,6 +82,7 @@
   margin-bottom: 8px;
   fill: currentColor;
 }
+
 .action-button span {
   font-size: 0.8em;
   text-transform: uppercase;
@@ -92,12 +93,20 @@
   color: #FFFFFF;
 }
 
-.like-button.liked svg {
-    fill: #1DB954;
-    color: #1DB954;
+.like-button.liked {
+  color: #1DB954;
 }
+
+.like-button.liked svg {
+  fill: #1DB954;
+}
+
 .like-button.liked span {
-    color: #1DB954;
+  color: #1DB954;
+}
+
+.skip-button:active {
+  color: #1DB954;
 }
 
 .up-next {
@@ -116,9 +125,26 @@
 }
 
 .up-next-items {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
   gap: 20px;
+  overflow-x: auto;
+  padding: 10px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #535353 #282828;
+}
+
+.up-next-items::-webkit-scrollbar {
+  height: 6px;
+}
+
+.up-next-items::-webkit-scrollbar-track {
+  background: #282828;
+  border-radius: 3px;
+}
+
+.up-next-items::-webkit-scrollbar-thumb {
+  background-color: #535353;
+  border-radius: 3px;
 }
 
 .up-next-item {
@@ -126,11 +152,10 @@
   border-radius: 6px;
   padding: 15px;
   transition: background-color 0.2s ease-in-out;
-  min-height: 120px;
+  min-width: 250px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #B3B3B3;
+  flex-shrink: 0;
 }
 
 .up-next-item:hover {
@@ -150,6 +175,9 @@
   }
   .album-art-section {
     max-width: 300px;
+  }
+  .up-next-item {
+    min-width: 200px;
   }
 }
 
@@ -181,7 +209,7 @@
   .up-next h3 {
     font-size: 1.2em;
   }
-  .up-next-items {
-    grid-template-columns: 1fr;
+  .up-next-item {
+    min-width: 180px;
   }
 }
