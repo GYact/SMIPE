@@ -36,6 +36,28 @@ class LocationsController < ApplicationController
     end
   end
 
+  def nearby
+    if current_user&.has_location?
+      nearby_users = User
+        .with_location
+        .where.not(id: current_user.id) # 自分は除外
+        .near_location(current_user.latitude, current_user.longitude)
+
+      render json: nearby_users.map { |user|
+        {
+          id: user.id,
+          nickname: user.nickname,
+          latitude: user.latitude,
+          longitude: user.longitude,
+          location_name: user.location_name,
+          last_updated: user.last_location_update
+        }
+      }
+    else
+      render json: { status: 'no_location' }, status: :not_found
+    end
+  end
+
   private
 
   def location_params

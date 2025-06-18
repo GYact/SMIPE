@@ -9,4 +9,5 @@ Rails.application.routes.draw do
   get '/player', to: 'player#show', as: 'player_page'
   get 'map', to: 'maps#index'
   get '/login', to: 'sessions#login', as: 'login'
+  get '/locations/nearby', to: 'locations#nearby'
 end
