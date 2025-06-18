@@ -12,6 +12,7 @@ export default class extends Controller {
   connect() {
     this.initMap();
     this.requestLocation();
+    this.loadSavedPlaylists();
   }
 
   initMap() {
@@ -22,6 +23,9 @@ export default class extends Controller {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
+
+    // マーカーを保持する配列
+    this.playlistMarkers = [];
   }
 
   requestLocation() {
@@ -176,6 +180,47 @@ export default class extends Controller {
     return element && element.getAttribute("content");
   }
 
+  // 保存されたプレイリストの位置情報を取得して表示
+  loadSavedPlaylists() {
+    fetch('/playlist_locations')
+      .then(response => response.json())
+      .then(data => {
+        // 既存のマーカーをクリア
+        this.clearPlaylistMarkers();
+        
+        // 新しいマーカーを追加
+        data.forEach(location => {
+          this.addPlaylistMarker(location);
+        });
+      })
+      .catch(error => {
+        console.error('プレイリスト位置情報の取得に失敗しました:', error);
+      });
+  }
+
+  // プレイリストのマーカーを追加
+  addPlaylistMarker(location) {
+    const marker = L.marker([location.latitude, location.longitude])
+      .bindPopup(`
+        <div class="playlist-marker-popup">
+          <h4>${location.name}</h4>
+          <p>場所: ${location.location_name}</p>
+          <p>保存日時: ${new Date(location.created_at).toLocaleString('ja-JP')}</p>
+        </div>
+      `);
+    
+    marker.addTo(this.map);
+    this.playlistMarkers.push(marker);
+  }
+
+  // すべてのプレイリストマーカーをクリア
+  clearPlaylistMarkers() {
+    this.playlistMarkers.forEach(marker => {
+      this.map.removeLayer(marker);
+    });
+    this.playlistMarkers = [];
+  }
+
   // ✅ プレイリストを保存するボタンがクリックされたときの処理
   savePlaylists() {
     if (!this.hasPlaylistsValue || !this.hasUserLocationValue) {
@@ -244,6 +289,8 @@ export default class extends Controller {
         console.log("保存結果:", data);
         if (data.status === "success") {
           this.showStatus(`${data.saved_count}件のプレイリストを保存しました`, "success");
+          // 保存成功後にマーカーを更新
+          this.loadSavedPlaylists();
         } else {
           console.error("保存失敗:", data);
           this.showStatus("プレイリストの保存に失敗しました", "error");

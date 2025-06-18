@@ -11,4 +11,5 @@ Rails.application.routes.draw do
   get '/login', to: 'sessions#login', as: 'login'
   post 'save_all_playlists', to: 'player#save_all'
   post 'playlists/save', to: 'playlists#save'
+  get 'playlist_locations', to: 'player#locations'
 end

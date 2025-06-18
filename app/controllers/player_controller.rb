@@ -104,6 +104,11 @@ class PlayerController < ApplicationController
     render json: { status: 'error', message: e.message }, status: :unprocessable_entity
   end
 
+  def locations
+    @playlist_locations = current_user.playlist_locations.order(created_at: :desc)
+    render json: @playlist_locations
+  end
+
   private
 
   def require_login
