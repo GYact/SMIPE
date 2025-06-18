@@ -3,10 +3,11 @@
  *= require_self
  */
 
-@import "pages/home.css";
-@import "custom.css";
-@import "maps.css";
-@import "_header.css";
+@import "pages/home";
+@import "pages/playlists";
+@import "custom";
+@import "maps";
+@import "_header";
 
 body {
     margin: 0;

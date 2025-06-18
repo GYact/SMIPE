@@ -1,4 +1,5 @@
 class User < ApplicationRecord
+  has_secure_password
 
   # 位置情報関連のバリデーション
   validates :latitude, numericality: { 
@@ -43,6 +44,11 @@ class User < ApplicationRecord
   def location_stale?(hours = 1)
     return true if last_location_update.nil?
     last_location_update < hours.hours.ago
+  end
+
+  def spotify_user
+    return nil unless session[:spotify_user_data]
+    @spotify_user ||= RSpotify::User.new(session[:spotify_user_data])
   end
 
 end
