@@ -45,4 +45,6 @@ class User < ApplicationRecord
     last_location_update < hours.hours.ago
   end
 
+  has_many :playlist_locations, dependent: :destroy
+
 end

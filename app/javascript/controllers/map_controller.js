@@ -4,6 +4,10 @@ import L from "leaflet"
 
 export default class extends Controller {
   static targets = ["updateButton", "locationDisplay", "statusMessage"]
+  static values = {
+    playlists: Array,
+    userLocation: Object
+  }
 
   connect() {
     this.initMap();
@@ -170,5 +174,84 @@ export default class extends Controller {
   getMetaValue(name) {
     const element = document.querySelector(`meta[name="${name}"]`);
     return element && element.getAttribute("content");
+  }
+
+  // ✅ プレイリストを保存するボタンがクリックされたときの処理
+  savePlaylists() {
+    if (!this.hasPlaylistsValue || !this.hasUserLocationValue) {
+      console.error("保存に必要な情報が不足しています:", {
+        hasPlaylists: this.hasPlaylistsValue,
+        hasUserLocation: this.hasUserLocationValue
+      });
+      this.showStatus("位置情報またはプレイリスト情報が不足しています", "error");
+      return;
+    }
+
+    const playlists = this.playlistsValue;
+    const location = this.userLocationValue;
+
+    console.log("保存を開始します:", {
+      playlistsCount: playlists.length,
+      playlists: playlists,
+      location: location
+    });
+
+    if (!location.latitude || !location.longitude) {
+      console.error("位置情報が不正です:", location);
+      this.showStatus("位置情報が正しく設定されていません。位置を更新してください。", "error");
+      return;
+    }
+
+    if (playlists.length === 0) {
+      console.error("プレイリストが空です");
+      this.showStatus("プレイリストがありません。", "error");
+      return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (!csrfToken) {
+      console.error("CSRFトークンが見つかりません");
+      this.showStatus("セキュリティトークンが見つかりません。ページを再読み込みしてください。", "error");
+      return;
+    }
+
+    console.log("サーバーにリクエストを送信します");
+    fetch("/save_all_playlists", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken,
+        Accept: "application/json"
+      },
+      body: JSON.stringify({
+        playlists: playlists,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        location_name: location.location_name
+      })
+    })
+      .then((res) => {
+        console.log("サーバーからのレスポンス:", res.status);
+        if (!res.ok) {
+          return res.json().then(data => {
+            console.error("サーバーエラー:", data);
+            throw new Error(data.message || "サーバーエラー");
+          });
+        }
+        return res.json();
+      })
+      .then((data) => {
+        console.log("保存結果:", data);
+        if (data.status === "success") {
+          this.showStatus(`${data.saved_count}件のプレイリストを保存しました`, "success");
+        } else {
+          console.error("保存失敗:", data);
+          this.showStatus("プレイリストの保存に失敗しました", "error");
+        }
+      })
+      .catch((error) => {
+        console.error("エラーが発生しました:", error);
+        this.showStatus(error.message || "通信に失敗しました", "error");
+      });
   }
 }

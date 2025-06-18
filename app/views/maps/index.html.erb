@@ -1,4 +1,8 @@
-<div data-controller="map" class="map-container">
+<%= csrf_meta_tags %>
+<div data-controller="map"
+     class="map-container"
+     data-map-playlists-value="<%= @playlists.to_json %>"
+     data-map-user-location-value="<%= @user_location.to_json %>">
   <div class="map-wrapper">
     <div id="map" style="height:600px;"></div>
   </div>
@@ -22,6 +26,14 @@
     <button data-map-target="updateButton" 
             data-action="click->map#updateLocation" 
             class="update-button">位置を更新</button>
+    <% if @playlists.any? %>
+      <button data-action="click->map#savePlaylists"
+              class="update-button">プレイリストをマップに登録する</button>
+    <% else %>
+      <div class="warning-message">
+        <%= flash[:warning] || "プレイリストがありません" %>
+      </div>
+    <% end %>
     <div data-map-target="statusMessage" id="statusMessage"></div>
   </div>
 </div>
