@@ -172,3 +172,23 @@ export default class extends Controller {
     return element && element.getAttribute("content");
   }
 }
+
+  fetch("/locations/nearby")
+  .then(response => response.json())
+  .then(users => {
+    users.forEach(user => {
+      if (user.latitude && user.longitude) {
+        const marker = L.marker([user.latitude, user.longitude]).addTo(this.map)
+          .bindPopup(`
+            <div>
+              <strong>${user.nickname}</strong><br>
+              ${user.location_name || ""}<br>
+              最終更新: ${new Date(user.last_updated).toLocaleString('ja-JP')}
+            </div>
+          `);
+      }
+    });
+  })
+  .catch(error => {
+    console.error("近くのユーザー取得に失敗:", error);
+  });
