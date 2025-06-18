@@ -19,4 +19,25 @@ class HomeController < ApplicationController
       ).where.not(id: current_user.id).limit(10)
     end
   end
+
+  def playlists
+    if logged_in? && session[:spotify_user_data]
+      begin
+        rspotify_user = RSpotify::User.new(session[:spotify_user_data])
+        user_playlists = rspotify_user.playlists(limit: 50) # ユーザーのプレイリストを50件まで取得
+        
+        playlists_data = user_playlists.map do |playlist|
+          { id: playlist.id, name: playlist.name }
+        end
+        
+        render json: { status: 'success', playlists: playlists_data }
+      rescue RestClient::ExceptionWithResponse => e
+        render json: { status: 'error', message: 'Spotify APIエラー', details: e.response }, status: :bad_gateway
+      rescue => e
+        render json: { status: 'error', message: '不明なエラー', details: e.message }, status: :internal_server_error
+      end
+    else
+      render json: { status: 'error', message: 'ログインしていません' }, status: :unauthorized
+    end
+  end
 end

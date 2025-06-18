@@ -67,7 +67,7 @@
 }
 
 .update-button:hover {
-  background-color: #1ED760;
+  background-color: #0056b3;
 }
 
 .update-button:disabled {
@@ -75,9 +75,47 @@
   cursor: not-allowed;
 }
 
+.place-button {
+  background-color: #1DB954; /* Spotify Green */
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.place-button:hover {
+  background-color: #1ed760;
+}
+
+.place-button i {
+  font-size: 16px;
+}
+
+.playlist-placement {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.playlist-select {
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  flex-grow: 1;
+}
+
 .status-message {
   margin-top: 15px;
-  padding: 12px;
+  padding: 10px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;

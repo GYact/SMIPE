@@ -22,6 +22,14 @@
     <button data-map-target="updateButton" 
             data-action="click->map#updateLocation" 
             class="update-button">位置を更新</button>
+    
+    <div class="playlist-placement">
+      <select data-map-target="playlistSelect" class="playlist-select"></select>
+      <button data-action="click->map#placeSpot" class="place-button">
+        <i class="fas fa-map-marker-alt"></i> このプレイリストを置く
+      </button>
+    </div>
+
     <div data-map-target="statusMessage" id="statusMessage"></div>
   </div>
 </div>

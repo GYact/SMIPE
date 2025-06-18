@@ -3,11 +3,13 @@ import { Controller } from "@hotwired/stimulus"
 import L from "leaflet"
 
 export default class extends Controller {
-  static targets = ["updateButton", "locationDisplay", "statusMessage"]
+  static targets = ["updateButton", "locationDisplay", "statusMessage", "playlistSelect"]
 
   connect() {
     this.initMap();
     this.requestLocation();
+    this.loadExistingSpots();
+    this.loadPlaylists();
   }
 
   initMap() {
@@ -18,6 +20,37 @@ export default class extends Controller {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
+  }
+
+  loadExistingSpots() {
+    fetch("/playlist_spots")
+      .then(response => response.json())
+      .then(spots => {
+        spots.forEach(spot => {
+          this.addSpotMarker(spot);
+        });
+      })
+      .catch(error => console.error("Error loading spots:", error));
+  }
+
+  loadPlaylists() {
+    fetch("/my_playlists")
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          const select = this.playlistSelectTarget;
+          select.innerHTML = ''; // 古いオプションをクリア
+          data.playlists.forEach(playlist => {
+            const option = document.createElement('option');
+            option.value = playlist.id;
+            option.textContent = playlist.name;
+            select.appendChild(option);
+          });
+        } else {
+          console.error("プレイリストの読み込みに失敗しました:", data.message);
+        }
+      })
+      .catch(error => console.error("プレイリストの読み込みエラー:", error));
   }
 
   requestLocation() {
@@ -98,6 +131,92 @@ export default class extends Controller {
         this.updateButtonTarget.textContent = "位置を更新";
       }
     }, 2000);
+  }
+
+  placeSpot() {
+    const playlistId = this.playlistSelectTarget.value;
+    if (!playlistId) {
+      this.showStatus("プレイリストが選択されていません", "error");
+      return;
+    }
+
+    this.showStatus("現在地を取得してプレイリストを設置します...", "info");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+        this.sendSpotToServer(latitude, longitude, playlistId);
+      },
+      (error) => {
+        console.error("位置情報取得失敗:", error);
+        this.showStatus("位置情報を取得できませんでした", "error");
+      },
+      { enableHighAccuracy: true }
+    );
+  }
+
+  sendSpotToServer(lat, lng, playlistId) {
+    const spotData = {
+      playlist_spot: {
+        latitude: lat,
+        longitude: lng,
+        spotify_playlist_id: playlistId,
+      }
+    };
+
+    fetch("/playlist_spots", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": this.getMetaValue("csrf-token"),
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(spotData)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === "success") {
+        this.showStatus("現在の場所にプレイリストを設置しました！", "success");
+        this.addSpotMarker(data.playlist_spot);
+      } else {
+        const errorMessage = data.errors ? data.errors.join(", ") : "不明なエラー";
+        this.showStatus(`設置に失敗しました: ${errorMessage}`, "error");
+      }
+    })
+    .catch(error => {
+      console.error("通信エラー", error);
+      this.showStatus("通信に失敗しました", "error");
+    });
+  }
+
+  addSpotMarker(spot) {
+    const marker = L.marker([spot.latitude, spot.longitude]).addTo(this.map);
+    const playlistUri = `spotify:playlist:${spot.spotify_playlist_id}`;
+
+    marker.on('popupopen', () => {
+      const content = `
+        <div>
+          <p>Playlist: ${spot.spotify_playlist_id}</p>
+          <button class="popup-play-button">このプレイリストを聴く</button>
+        </div>
+      `;
+      marker.setPopupContent(content);
+
+      const playButton = marker.getPopup().getElement().querySelector('.popup-play-button');
+      if (playButton) {
+        playButton.onclick = () => {
+          if (window.playSpotifyTrack) {
+            window.playSpotifyTrack(playlistUri);
+          } else {
+            console.error('playSpotifyTrack function not found');
+            alert('再生機能の初期化に問題があります。');
+          }
+        };
+      }
+    });
+
+    marker.bindPopup("Loading...");
   }
 
   sendLocationToServer(lat, lng) {

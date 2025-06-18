@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   root 'static_pages#home'
   resources :locations, only: [:show, :update]
+  resources :playlist_spots, only: [:index, :create]
   get '/auth/:provider/callback', to: 'sessions#create'
   delete '/logout', to: 'sessions#destroy', as: 'logout'
   get 'show', to: 'users#show'
@@ -9,4 +10,5 @@ Rails.application.routes.draw do
   get '/player', to: 'player#show', as: 'player_page'
   get 'map', to: 'maps#index'
   get '/login', to: 'sessions#login', as: 'login'
+  get '/my_playlists', to: 'home#playlists'
 end
