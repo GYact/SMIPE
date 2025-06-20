@@ -9,23 +9,38 @@ class PlaylistsController < ApplicationController
   end
 
   def tracks
-    if session[:spotify_user_data]
-      begin
-        @spotify_user = RSpotify::User.new(session[:spotify_user_data])
-        playlist = @spotify_user.playlist(params[:id])
-        tracks = playlist.tracks.map do |track|
-          {
-            name: track.name,
-            artists: track.artists.map { |artist| { name: artist.name } }
-          }
+    respond_to do |format|
+      format.json do
+        begin
+          spotify_user_data = session[:spotify_user_data]
+          if spotify_user_data
+            user = RSpotify::User.new(spotify_user_data)
+            playlist_id = params[:id]
+            playlist = user.playlists.find { |pl| pl.id == playlist_id }
+            if playlist
+              tracks = playlist.tracks.map do |track|
+                {
+                  id: track.id,
+                  name: track.name,
+                  artists: track.artists.map(&:name),
+                  album: {
+                    name: track.album.name,
+                    images: track.album.images
+                  },
+                  uri: track.uri
+                }
+              end
+              render json: tracks
+            else
+              render json: { error: 'Playlist not found' }, status: :not_found
+            end
+          else
+            render json: { error: 'Spotify認証情報がありません' }, status: :unauthorized
+          end
+        rescue => e
+          render json: { error: e.message }, status: :internal_server_error
         end
-        render json: tracks
-      rescue => e
-        Rails.logger.error "Error fetching playlist tracks: #{e.message}"
-        render json: { error: 'Failed to load tracks' }, status: :internal_server_error
       end
-    else
-      render json: { error: 'Please login with Spotify first' }, status: :unauthorized
     end
   end
-end 
+end
