@@ -1,5 +1,5 @@
 class User < ApplicationRecord
-  has_secure_password
+  # has_secure_password
 
   # 位置情報関連のバリデーション
   validates :latitude, numericality: { 
