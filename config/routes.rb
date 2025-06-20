@@ -9,4 +9,12 @@ Rails.application.routes.draw do
   get '/player', to: 'player#show', as: 'player_page'
   get 'map', to: 'maps#index'
   get '/login', to: 'sessions#login', as: 'login'
+  get 'playlists', to: 'playlists#index'
+  get 'playlists/:id/tracks', to: 'playlists#tracks'
+  patch 'player/update_selected_playlist', to: 'player#update_selected_playlist'
+  resources :playlists, only: [:index] do
+    member do
+      get :tracks
+    end
+  end
 end
