@@ -45,4 +45,8 @@ class User < ApplicationRecord
     last_location_update < hours.hours.ago
   end
 
+  def spotify_image_url
+    image.presence
+  end  
+
 end
