@@ -185,13 +185,13 @@ export default class extends Controller {
           break;
         case 'down':
           console.log('Swipe down - Previous track');
-          const upEvent = new CustomEvent('swipeUp', { bubbles: true });
-          this.element.dispatchEvent(upEvent);
+          const downEvent = new CustomEvent('swipeDown', { bubbles: true });
+          this.element.dispatchEvent(downEvent);
           break;
         case 'up':
           console.log('Swipe up - Next track');
-          const downEvent = new CustomEvent('swipeDown', { bubbles: true });
-          this.element.dispatchEvent(downEvent);
+          const upEvent = new CustomEvent('swipeUp', { bubbles: true });
+          this.element.dispatchEvent(upEvent);
           break;
       }
     } else {
