@@ -10,6 +10,10 @@ class PlayerController < ApplicationController
         tracks = playlist.tracks
         @all_track_uris.concat(tracks.map(&:uri))
       end
+
+      # 選択されたプレイリストのIDを取得（セッションから、またはデフォルトとして最初のプレイリスト）
+      @selected_playlist_id = session[:selected_playlist_id] || @playlists.first&.id
+
       first_playlist = @playlists.first
       if first_playlist && first_playlist.tracks.any?
         @first_track = first_playlist.tracks.first
@@ -33,6 +37,15 @@ class PlayerController < ApplicationController
       log_out
       session.delete(:spotify_user_data)
       redirect_to root_path
+    end
+  end
+
+  def update_selected_playlist
+    if params[:playlist_id].present?
+      session[:selected_playlist_id] = params[:playlist_id]
+      render json: { status: 'success' }
+    else
+      render json: { status: 'error', message: 'No playlist selected' }, status: :bad_request
     end
   end
 

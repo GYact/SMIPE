@@ -16,7 +16,6 @@
     <% end %>
 
     <%= yield :head %>
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
 
     <%= favicon_link_tag('favicon.ico') %>
     <link rel="icon" href="<%= asset_path('SMIPE_logo.png') %>" type="image/png">
@@ -39,10 +38,11 @@
   </head>
 
   <body>
-    <%= render 'layouts/header' %>
-    <% flash.each do |message_type, message| %>
-      <%= message %>
+    <% unless @hide_header %>
+      <%= render 'layouts/header' %>
     <% end %>
+    <div id="flash-container" data-flash="<%= flash.to_json %>"></div>
+    <% flash.discard %>
     <%= yield %>
   </body>
 </html>

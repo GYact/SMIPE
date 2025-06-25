@@ -1,4 +1,5 @@
 class User < ApplicationRecord
+  # has_secure_password
 
   # 位置情報関連のバリデーション
   validates :latitude, numericality: { 
@@ -48,5 +49,10 @@ class User < ApplicationRecord
   def spotify_image_url
     image.presence
   end  
+
+  def rspotify_user
+    return nil unless self.spotify_data.present?
+    RSpotify::User.new(self.spotify_data)
+  end
 
 end
