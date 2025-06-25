@@ -56,19 +56,20 @@ class PlayerController < ApplicationController
     end
   end
 
-  def save_all
+  def save_playlist
     unless logged_in?
       render json: { status: 'error', message: 'ログインが必要です。' }, status: :unauthorized
       return
     end
 
-    playlists = params[:playlists] || []
+    name = params[:name]
+    uri = params[:uri]
     latitude = params[:latitude]
     longitude = params[:longitude]
     location_name = params[:location_name]
 
-    if playlists.empty?
-      render json: { status: 'error', message: 'プレイリストがありません。' }, status: :unprocessable_entity
+    if name.blank? || uri.blank?
+      render json: { status: 'error', message: 'プレイリスト情報が不足しています。' }, status: :unprocessable_entity
       return
     end
 
@@ -77,38 +78,27 @@ class PlayerController < ApplicationController
       return
     end
 
-    saved_count = 0
-    errors = []
-
-    playlists.each do |pl|
-      begin
-        playlist = current_user.playlist_locations.build(
-          name: pl[:name],
-          uri: pl[:uri],
-          latitude: latitude,
-          longitude: longitude,
-          location_name: location_name
-        )
-        
-        if playlist.save
-          saved_count += 1
-        else
-          errors << "#{pl[:name]}: #{playlist.errors.full_messages.join(', ')}"
-        end
-      rescue => e
-        Rails.logger.error "PlaylistLocation creation error: #{e.message}"
-        errors << "#{pl[:name]}: #{e.message}"
+    begin
+      playlist = current_user.playlist_locations.build(
+        name: name,
+        uri: uri,
+        latitude: latitude,
+        longitude: longitude,
+        location_name: location_name
+      )
+      
+      if playlist.save
+        render json: { status: 'success', message: "プレイリスト「#{name}」を保存しました" }
+      else
+        render json: { 
+          status: 'error', 
+          message: playlist.errors.full_messages.join(', ') 
+        }, status: :unprocessable_entity
       end
+    rescue => e
+      Rails.logger.error "PlaylistLocation creation error: #{e.message}"
+      render json: { status: 'error', message: e.message }, status: :unprocessable_entity
     end
-
-    if saved_count > 0
-      render json: { status: 'success', saved_count: saved_count }
-    else
-      render json: { status: 'error', message: errors.join('; ') }, status: :unprocessable_entity
-    end
-  rescue => e
-    Rails.logger.error "Save all playlists error: #{e.message}"
-    render json: { status: 'error', message: e.message }, status: :unprocessable_entity
   end
 
   def locations

@@ -26,14 +26,33 @@
     <button data-map-target="updateButton" 
             data-action="click->map#updateLocation" 
             class="update-button">位置を更新</button>
-    <% if @playlists.any? %>
-      <button data-action="click->map#savePlaylists"
-              class="update-button">プレイリストをマップに登録する</button>
-    <% else %>
-      <div class="warning-message">
-        <%= flash[:warning] || "プレイリストがありません" %>
-      </div>
-    <% end %>
+    
+    <!-- プレイリスト選択セクション -->
+    <div class="playlist-selection-section">
+      <h3>プレイリストを選択して保存</h3>
+      <% if @playlists.any? %>
+        <div class="playlist-selection">
+          <label for="playlist-select">保存するプレイリストを選択:</label>
+          <select id="playlist-select" class="playlist-dropdown">
+            <option value="">プレイリストを選択してください</option>
+            <% @playlists.each do |playlist| %>
+              <option value="<%= playlist[:uri] %>" data-name="<%= playlist[:name] %>">
+                <%= playlist[:name] %>
+              </option>
+            <% end %>
+          </select>
+          <button data-action="click->map#saveSelectedPlaylist"
+                  class="save-playlist-button" disabled>
+            <i class="fas fa-save"></i> 選択したプレイリストを保存
+          </button>
+        </div>
+      <% else %>
+        <div class="warning-message">
+          <%= flash[:warning] || "プレイリストがありません" %>
+        </div>
+      <% end %>
+    </div>
+
     <div data-map-target="statusMessage" id="statusMessage"></div>
   </div>
 </div>

@@ -13,6 +13,7 @@ export default class extends Controller {
     this.initMap();
     this.requestLocation();
     this.loadSavedPlaylists();
+    this.setupPlaylistSelection();
   }
 
   initMap() {
@@ -26,6 +27,17 @@ export default class extends Controller {
 
     // マーカーを保持する配列
     this.playlistMarkers = [];
+  }
+
+  setupPlaylistSelection() {
+    const playlistSelect = document.getElementById('playlist-select');
+    const saveButton = document.querySelector('.save-playlist-button');
+    
+    if (playlistSelect && saveButton) {
+      playlistSelect.addEventListener('change', () => {
+        saveButton.disabled = !playlistSelect.value;
+      });
+    }
   }
 
   requestLocation() {
@@ -228,38 +240,32 @@ export default class extends Controller {
     this.playlistMarkers = [];
   }
 
-  // ✅ プレイリストを保存するボタンがクリックされたときの処理
-  savePlaylists() {
-    if (!this.hasPlaylistsValue || !this.hasUserLocationValue) {
-      console.error("保存に必要な情報が不足しています:", {
-        hasPlaylists: this.hasPlaylistsValue,
-        hasUserLocation: this.hasUserLocationValue
-      });
-      this.showStatus("位置情報またはプレイリスト情報が不足しています", "error");
+  // ✅ 選択されたプレイリストを保存する処理
+  saveSelectedPlaylist() {
+    const playlistSelect = document.getElementById('playlist-select');
+    const selectedUri = playlistSelect.value;
+    const selectedOption = playlistSelect.options[playlistSelect.selectedIndex];
+    const selectedName = selectedOption.getAttribute('data-name');
+
+    if (!selectedUri) {
+      this.showStatus("プレイリストを選択してください", "error");
       return;
     }
 
-    const playlists = this.playlistsValue;
+    if (!this.hasUserLocationValue) {
+      console.error("位置情報が不足しています");
+      this.showStatus("位置情報が不足しています。位置を更新してください。", "error");
+      return;
+    }
+
     const location = this.userLocationValue;
 
-    console.log("保存を開始します:", {
-      playlistsCount: playlists.length,
-      playlists: playlists,
-      location: location
-    });
-
-    // 位置情報の妥当性チェックを改善
+    // 位置情報の妥当性チェック
     if (!location.latitude || !location.longitude || 
         location.latitude === 0 || location.longitude === 0 ||
         isNaN(location.latitude) || isNaN(location.longitude)) {
       console.error("位置情報が不正です:", location);
       this.showStatus("位置情報が正しく設定されていません。位置を更新してください。", "error");
-      return;
-    }
-
-    if (playlists.length === 0) {
-      console.error("プレイリストが空です");
-      this.showStatus("プレイリストがありません。", "error");
       return;
     }
 
@@ -270,8 +276,20 @@ export default class extends Controller {
       return;
     }
 
-    console.log("サーバーにリクエストを送信します");
-    fetch("/save_all_playlists", {
+    console.log("選択されたプレイリストを保存します:", {
+      name: selectedName,
+      uri: selectedUri,
+      location: location
+    });
+
+    // 保存ボタンを無効化
+    const saveButton = document.querySelector('.save-playlist-button');
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+    }
+
+    fetch("/save_playlist", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -279,7 +297,8 @@ export default class extends Controller {
         Accept: "application/json"
       },
       body: JSON.stringify({
-        playlists: playlists,
+        name: selectedName,
+        uri: selectedUri,
         latitude: location.latitude,
         longitude: location.longitude,
         location_name: location.location_name
@@ -298,9 +317,15 @@ export default class extends Controller {
       .then((data) => {
         console.log("保存結果:", data);
         if (data.status === "success") {
-          this.showStatus(`${data.saved_count}件のプレイリストを保存しました`, "success");
+          this.showStatus(`プレイリスト「${selectedName}」を保存しました`, "success");
           // 保存成功後にマーカーを更新
           this.loadSavedPlaylists();
+          // セレクトボックスをリセット
+          playlistSelect.value = "";
+          if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-save"></i> 選択したプレイリストを保存';
+          }
         } else {
           console.error("保存失敗:", data);
           this.showStatus("プレイリストの保存に失敗しました", "error");
@@ -309,6 +334,13 @@ export default class extends Controller {
       .catch((error) => {
         console.error("エラーが発生しました:", error);
         this.showStatus(error.message || "通信に失敗しました", "error");
+      })
+      .finally(() => {
+        // 保存ボタンを元に戻す
+        if (saveButton) {
+          saveButton.disabled = false;
+          saveButton.innerHTML = '<i class="fas fa-save"></i> 選択したプレイリストを保存';
+        }
       });
   }
 }
