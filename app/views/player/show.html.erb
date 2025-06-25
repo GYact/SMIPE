@@ -638,6 +638,34 @@
         }
       });
 
+      // Skipボタンのイベントリスナー
+      document.getElementById('skip-button').addEventListener('click', handleSkip);
+
+      // Likeボタンのイベントリスナー
+      document.getElementById('like-button').addEventListener('click', function() {
+        const trackUri = trackUris[currentIndex];
+        const trackId = trackUri.split(':').pop();
+        const method = isLiked ? 'DELETE' : 'PUT';
+
+        fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
+          method: method,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }).then(response => {
+          if (response.ok) {
+            isLiked = !isLiked; // 状態を反転
+            handleLike(isLiked); // UI更新と次の曲へ
+          } else {
+            console.error('Failed to update like status');
+            alert('いいねの状態の更新に失敗しました。');
+          }
+        }).catch(err => {
+          console.error('Error updating like status:', err);
+          alert('いいねの状態の更新中にエラーが発生しました。');
+        });
+      });
+
       function handleLike(isAdd) {
         console.log(`Like button clicked: ${isAdd ? 'Add' : 'Remove'}`);
         previousTracks.push(currentIndex);
