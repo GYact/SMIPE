@@ -1,9 +1,4 @@
 services:
-  # PostgreSQL Database
-  - type: pserv
-    name: smipe-db
-    plan: free
-
   # Rails Web Service (from Docker)
   - type: web
     name: smipe-web
@@ -11,6 +6,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     healthCheckPath: /up
+    preDeployCommand: "bundle exec rails db:migrate" # Run migrations before deploy
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -22,4 +18,11 @@ services:
         sync: false
       - key: SPOTIFY_CLIENT_SECRET
         sync: false
-    autoDeploy: true 
+    autoDeploy: true
+
+  # PostgreSQL Database
+  - type: pserv
+    name: smipe-db
+    plan: free
+    postgresMajorVersion: "14"
+    ipAllowList: [] # Allow all services in the account to connect 
