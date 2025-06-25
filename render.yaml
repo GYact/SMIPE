@@ -1,7 +1,6 @@
 databases:
   - name: smipe-db
     plan: free
-    postgresMajorVersion: "14"
 
 services:
   # Rails Web Service (from Docker)
