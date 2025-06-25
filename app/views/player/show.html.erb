@@ -184,6 +184,10 @@
       let isShuffled = false;
 
       const playerController = document.querySelector('[data-controller="player"]');
+      const playPauseBtn = document.getElementById('play-pause-btn');
+      const playIcon = document.getElementById('play-icon');
+      const pauseIcon = document.getElementById('pause-icon');
+      const playSpan = playPauseBtn.querySelector('span');
 
       // Helper to wait for device ID
       function getDeviceId() {
@@ -197,6 +201,53 @@
           }
         });
       }
+      
+      // 再生/一時停止ボタンのイベントリスナー
+      playPauseBtn.addEventListener('click', async () => {
+        try {
+          const deviceId = await getDeviceId();
+          if (!deviceId) {
+            console.error('Device ID not available. Cannot toggle play/pause.');
+            alert('プレイヤーの準備ができていません。');
+            return;
+          }
+
+          // Spotify APIのエンドポイントを再生状態に応じて決定
+          const endpoint = isPlaying ? 'pause' : 'play';
+          const url = `https://api.spotify.com/v1/me/player/${endpoint}?device_id=${deviceId}`;
+
+          const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+          });
+
+          if (response.ok) {
+            isPlaying = !isPlaying; // 再生状態を反転
+            // UIを更新
+            if (isPlaying) {
+              playIcon.style.display = 'none';
+              pauseIcon.style.display = 'inline';
+              if(playSpan) playSpan.textContent = 'Pause';
+            } else {
+              playIcon.style.display = 'inline';
+              pauseIcon.style.display = 'none';
+              if(playSpan) playSpan.textContent = 'Play';
+            }
+          } else {
+            // APIエラーの詳細をコンソールに出力
+            const errorData = await response.json();
+            console.error('Failed to toggle playback. Response:', errorData);
+            alert(`再生の切り替えに失敗しました: ${errorData.error?.message || '不明なエラーです。コンソールを確認してください。'}`);
+          }
+        } catch (error) {
+          // ネットワークエラーなどをコンソールに出力
+          console.error('An error occurred while toggling playback:', error);
+          alert('再生の切り替え中に予期せぬエラーが発生しました。コンソールを確認してください。');
+        }
+      });
       
       // プレイリスト選択パネルの表示/非表示
       document.getElementById('toggle-playlist-selection').addEventListener('click', function() {
