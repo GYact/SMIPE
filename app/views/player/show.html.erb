@@ -1,5 +1,5 @@
 <div class="player-container">
-  <main class="player-content" data-controller="player">
+  <main class="player-content" data-controller="player" data-player-playing-value="false">
     <div class="album-art-section" id="album-art-section" data-player-target="albumArt">
       <% if @first_track && @first_track.album && @first_track.album.images.any? %>
         <%= image_tag @first_track.album.images.first['url'], alt: "Album Art", class: "album-image", data: { player_target: "albumImage" } %>
@@ -31,14 +31,14 @@
     </div>
 
     <div class="player-actions">
-      <button id="play-pause-btn" class="action-button play-button">
-        <svg id="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <button id="play-pause-btn" class="action-button play-button" data-action="click->player#togglePlay">
+        <svg id="play-icon" data-player-target="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M8 5v14l11-7z"/>
         </svg>
-        <svg id="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+        <svg id="pause-icon" data-player-target="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
           <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
         </svg>
-        <span>Play</span>
+        <span data-player-target="playLabel">PLAY</span>
       </button>
       <button class="action-button shuffle-button" id="shuffle-button">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -636,6 +636,34 @@
           updateUpNextDisplay();
           checkIfTrackIsLiked(trackUris[currentIndex]);
         }
+      });
+
+      // Skipボタンのイベントリスナー
+      document.getElementById('skip-button').addEventListener('click', handleSkip);
+
+      // Likeボタンのイベントリスナー
+      document.getElementById('like-button').addEventListener('click', function() {
+        const trackUri = trackUris[currentIndex];
+        const trackId = trackUri.split(':').pop();
+        const method = isLiked ? 'DELETE' : 'PUT';
+
+        fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
+          method: method,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }).then(response => {
+          if (response.ok) {
+            isLiked = !isLiked; // 状態を反転
+            handleLike(isLiked); // UI更新と次の曲へ
+          } else {
+            console.error('Failed to update like status');
+            alert('いいねの状態の更新に失敗しました。');
+          }
+        }).catch(err => {
+          console.error('Error updating like status:', err);
+          alert('いいねの状態の更新中にエラーが発生しました。');
+        });
       });
 
       function handleLike(isAdd) {
