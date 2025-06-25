@@ -1,9 +1,10 @@
+<div class="playlists-header">
+  Your Playlists
+</div>
+
 <div class="playlists-container">
-  <h1>Playlists</h1>
-  
   <% if @smipe_playlist %>
     <div class="playlist-section">
-      <h2>SMIPE Playlist</h2>
       <div class="playlist-card">
         <% if @smipe_playlist.images.any? %>
           <%= image_tag @smipe_playlist.images.first['url'], alt: "Playlist Cover", class: "playlist-cover" %>
@@ -20,7 +21,6 @@
   <% end %>
 
   <div class="playlist-section">
-    <h2>Your Playlists</h2>
     <div class="playlists-grid">
       <% @playlists.each do |playlist| %>
         <div class="playlist-card" data-playlist-id="<%= playlist.id %>">
@@ -44,10 +44,26 @@
 </div>
 
 <style>
+.playlists-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 96px; /* ヘッダー高さ+余白 */
+  margin-bottom: 32px;
+  z-index: 10;
+  position: relative;
+  background: transparent;
+  box-sizing: border-box;
+}
 .playlists-container {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  margin-top: 0;
 }
 
 .playlist-section {
@@ -160,4 +176,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
-</script> 
+</script>

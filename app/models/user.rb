@@ -46,9 +46,9 @@ class User < ApplicationRecord
     last_location_update < hours.hours.ago
   end
 
-  def spotify_user
-    return nil unless session[:spotify_user_data]
-    @spotify_user ||= RSpotify::User.new(session[:spotify_user_data])
+  def rspotify_user
+    return nil unless self.spotify_data.present?
+    RSpotify::User.new(self.spotify_data)
   end
 
 end
