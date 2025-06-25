@@ -1,5 +1,4 @@
 services:
-  # Rails Web Service (from Docker)
   - type: web
     name: smipe-web
     plan: free
@@ -19,10 +18,3 @@ services:
       - key: SPOTIFY_CLIENT_SECRET
         sync: false
     autoDeploy: true
-
-  # PostgreSQL Database
-  - type: pserv
-    name: smipe-db
-    plan: free
-    postgresMajorVersion: "14"
-    ipAllowList: [] # Allow all services in the account to connect 
