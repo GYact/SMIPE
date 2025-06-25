@@ -1,9 +1,13 @@
+system("node .github/setup.js")
 source "https://rubygems.org"
 
 gem "dotenv-rails"
 gem "omniauth"
 gem "omniauth-spotify"
+gem "omniauth-rails_csrf_protection"
 gem "rspotify"
+gem "geocoder"
+gem "activerecord-session_store"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.0"
@@ -50,7 +54,7 @@ group :development, :test do
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
-  gem "brakeman", require: false
+  gem 'brakeman', '~> 7.1.0', require: false
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
