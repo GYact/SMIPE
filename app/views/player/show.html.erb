@@ -399,7 +399,6 @@
           })
         }).then(() => {
           console.log(`Now playing: ${currentTrackUri}`);
-          updateCurrentTrackDisplay(currentTrackUri);
         }).catch(err => {
           console.error('Playback start error:', err);
         });
@@ -455,6 +454,7 @@
         currentIndex = (currentIndex + 1) % trackUris.length;
         console.log(`Skipping to track index ${currentIndex}`);
         playCurrentTrack();
+        updateCurrentTrackDisplay(trackUris[currentIndex]);
         updateUpNextDisplay();
         checkIfTrackIsLiked(trackUris[currentIndex]);
         const skipButton = document.getElementById('skip-button');
@@ -464,6 +464,33 @@
             skipButton.style.color = '#B3B3B3';
           }, 500);
         }
+      }
+
+      function handleNext() {
+        console.log('Next track (swipe up)');
+        previousTracks.push(currentIndex);
+        currentIndex = (currentIndex + 1) % trackUris.length;
+        console.log(`Moving to next track index ${currentIndex}`);
+        playCurrentTrack();
+        updateCurrentTrackDisplay(trackUris[currentIndex]);
+        updateUpNextDisplay();
+        checkIfTrackIsLiked(trackUris[currentIndex]);
+      }
+
+      function handlePrevious() {
+        console.log('Previous track (swipe down)');
+        if (previousTracks.length > 0) {
+          currentIndex = previousTracks.pop();
+          console.log(`Moving to previous track index ${currentIndex}`);
+        } else {
+          // 履歴がない場合は最後の曲に移動
+          currentIndex = (currentIndex - 1 + trackUris.length) % trackUris.length;
+          console.log(`Moving to last track index ${currentIndex}`);
+        }
+        playCurrentTrack();
+        updateCurrentTrackDisplay(trackUris[currentIndex]);
+        updateUpNextDisplay();
+        checkIfTrackIsLiked(trackUris[currentIndex]);
       }
 
       function updateUpNextDisplay() {
@@ -502,6 +529,7 @@
             itemDiv.addEventListener('click', () => {
               currentIndex = nextIndex;
               playCurrentTrack();
+              updateCurrentTrackDisplay(trackUri);
               updateUpNextDisplay();
               checkIfTrackIsLiked(trackUri);
             });
@@ -566,20 +594,20 @@
         }
       });
 
-      playerController.addEventListener('swipeUp', async () => {
+      playerController.addEventListener('swipeUp', () => {
         try {
           console.log('Swipe up detected');
-          await handleNext();
+          handleNext();
         } catch (error) {
           console.error('An error occurred during swipeUp:', error);
           alert('操作中にエラーが発生しました。しばらくしてからもう一度お試しください。');
         }
       });
 
-      playerController.addEventListener('swipeDown', async () => {
+      playerController.addEventListener('swipeDown', () => {
         try {
           console.log('Swipe down detected');
-          await handlePrevious();
+          handlePrevious();
         } catch (error) {
           console.error('An error occurred during swipeDown:', error);
           alert('操作中にエラーが発生しました。しばらくしてからもう一度お試しください。');
@@ -604,6 +632,9 @@
           trackUris.splice(0, trackUris.length, ...shuffledTracks);
           currentIndex = 0;
           playCurrentTrack();
+          updateCurrentTrackDisplay(trackUris[currentIndex]);
+          updateUpNextDisplay();
+          checkIfTrackIsLiked(trackUris[currentIndex]);
         }
       });
 
@@ -613,6 +644,7 @@
         currentIndex = (currentIndex + 1) % trackUris.length;
         console.log(`Skipping to track index ${currentIndex}`);
         playCurrentTrack();
+        updateCurrentTrackDisplay(trackUris[currentIndex]);
         updateUpNextDisplay();
         checkIfTrackIsLiked(trackUris[currentIndex]);
         const likeButton = document.getElementById('like-button');
@@ -628,6 +660,9 @@
       }
 
       playCurrentTrack();
+      updateCurrentTrackDisplay(trackUris[currentIndex]);
+      updateUpNextDisplay();
+      checkIfTrackIsLiked(trackUris[currentIndex]);
     });
   </script>
 <% end %>
