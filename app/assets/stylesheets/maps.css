@@ -122,34 +122,22 @@
   border: 1px solid #bee5eb;
 }
 
-/* プレイリスト選択セクションのスタイル */
-.playlist-selection-section {
+/* プレイリストセクションのスタイル */
+.playlist-section {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #e9ecef;
 }
 
-.playlist-selection-section h3 {
+.playlist-section h3 {
   margin: 0 0 15px 0;
   color: #333;
   font-size: 16px;
   font-weight: 600;
 }
 
-.playlist-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.playlist-selection label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #495057;
-  margin-bottom: 5px;
-}
-
 .playlist-dropdown {
+  width: 100%;
   padding: 10px;
   border: 1px solid #ced4da;
   border-radius: 6px;
@@ -158,6 +146,7 @@
   color: #495057;
   cursor: pointer;
   transition: border-color 0.2s;
+  margin-bottom: 10px;
 }
 
 .playlist-dropdown:focus {
@@ -167,6 +156,7 @@
 }
 
 .save-playlist-button {
+  width: 100%;
   padding: 12px;
   background: #28a745;
   color: white;
@@ -176,10 +166,6 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
 }
 
 .save-playlist-button:hover:not(:disabled) {
@@ -189,10 +175,6 @@
 .save-playlist-button:disabled {
   background: #6c757d;
   cursor: not-allowed;
-}
-
-.save-playlist-button i {
-  font-size: 16px;
 }
 
 /* プレイリストマーカーのポップアップスタイル */

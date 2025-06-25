@@ -286,7 +286,7 @@ export default class extends Controller {
     const saveButton = document.querySelector('.save-playlist-button');
     if (saveButton) {
       saveButton.disabled = true;
-      saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+      saveButton.textContent = '保存中...';
     }
 
     fetch("/save_playlist", {
@@ -324,7 +324,7 @@ export default class extends Controller {
           playlistSelect.value = "";
           if (saveButton) {
             saveButton.disabled = true;
-            saveButton.innerHTML = '<i class="fas fa-save"></i> 選択したプレイリストを保存';
+            saveButton.textContent = '選択したプレイリストを保存';
           }
         } else {
           console.error("保存失敗:", data);
@@ -339,7 +339,7 @@ export default class extends Controller {
         // 保存ボタンを元に戻す
         if (saveButton) {
           saveButton.disabled = false;
-          saveButton.innerHTML = '<i class="fas fa-save"></i> 選択したプレイリストを保存';
+          saveButton.textContent = '選択したプレイリストを保存';
         }
       });
   }

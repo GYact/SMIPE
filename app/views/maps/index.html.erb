@@ -10,7 +10,7 @@
   <div class="location-info">
     <h3>位置情報</h3>
     <div data-map-target="locationDisplay" id="location-display">
-      <% if @user_location && @user_location[:latitude] && @user_location[:longitude] %>
+      <% if @user_location && @user_location[:latitude] != 0 && @user_location[:longitude] != 0 %>
         <div class="coordinates">
           <strong>保存された位置:</strong><br>
           緯度: <%= @user_location[:latitude].round(4) %><br>
@@ -28,31 +28,28 @@
             class="update-button">位置を更新</button>
     
     <!-- プレイリスト選択セクション -->
-    <div class="playlist-selection-section">
-      <h3>プレイリストを選択して保存</h3>
-      <% if @playlists.any? %>
-        <div class="playlist-selection">
-          <label for="playlist-select">保存するプレイリストを選択:</label>
-          <select id="playlist-select" class="playlist-dropdown">
-            <option value="">プレイリストを選択してください</option>
-            <% @playlists.each do |playlist| %>
-              <option value="<%= playlist[:uri] %>" data-name="<%= playlist[:name] %>">
-                <%= playlist[:name] %>
-              </option>
-            <% end %>
-          </select>
-          <button data-action="click->map#saveSelectedPlaylist"
-                  class="save-playlist-button" disabled>
-            <i class="fas fa-save"></i> 選択したプレイリストを保存
-          </button>
-        </div>
-      <% else %>
-        <div class="warning-message">
-          <%= flash[:warning] || "プレイリストがありません" %>
-        </div>
-      <% end %>
-    </div>
-
+    <% if @playlists.any? %>
+      <div class="playlist-section">
+        <h3>プレイリストを保存</h3>
+        <select id="playlist-select" class="playlist-dropdown">
+          <option value="">プレイリストを選択してください</option>
+          <% @playlists.each do |playlist| %>
+            <option value="<%= playlist[:uri] %>" data-name="<%= playlist[:name] %>">
+              <%= playlist[:name] %>
+            </option>
+          <% end %>
+        </select>
+        <button data-action="click->map#saveSelectedPlaylist"
+                class="save-playlist-button" disabled>
+          選択したプレイリストを保存
+        </button>
+      </div>
+    <% else %>
+      <div class="warning-message">
+        <%= flash[:warning] || "プレイリストがありません" %>
+      </div>
+    <% end %>
+    
     <div data-map-target="statusMessage" id="statusMessage"></div>
   </div>
 </div>
