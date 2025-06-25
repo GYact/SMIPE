@@ -81,17 +81,23 @@ class PlayerController < ApplicationController
     errors = []
 
     playlists.each do |pl|
-      playlist = current_user.playlist_locations.build(
-        name: pl[:name],
-        uri: pl[:uri],
-        latitude: latitude,
-        longitude: longitude,
-        location_name: location_name
-      )
-      if playlist.save
-        saved_count += 1
-      else
-        errors << playlist.errors.full_messages.join(', ')
+      begin
+        playlist = current_user.playlist_locations.build(
+          name: pl[:name],
+          uri: pl[:uri],
+          latitude: latitude,
+          longitude: longitude,
+          location_name: location_name
+        )
+        
+        if playlist.save
+          saved_count += 1
+        else
+          errors << "#{pl[:name]}: #{playlist.errors.full_messages.join(', ')}"
+        end
+      rescue => e
+        Rails.logger.error "PlaylistLocation creation error: #{e.message}"
+        errors << "#{pl[:name]}: #{e.message}"
       end
     end
 
@@ -101,6 +107,7 @@ class PlayerController < ApplicationController
       render json: { status: 'error', message: errors.join('; ') }, status: :unprocessable_entity
     end
   rescue => e
+    Rails.logger.error "Save all playlists error: #{e.message}"
     render json: { status: 'error', message: e.message }, status: :unprocessable_entity
   end
 

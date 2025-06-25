@@ -34,6 +34,20 @@ class SessionsController < ApplicationController
     end 
   end 
   
+  def failure
+    error_message = case params[:message]
+    when 'invalid_credentials'
+      '認証情報が無効です。'
+    when 'csrf_detected'
+      'セキュリティエラーが発生しました。再度お試しください。'
+    else
+      '認証に失敗しました。'
+    end
+    
+    flash[:danger] = error_message
+    redirect_to root_url
+  end
+  
   def destroy 
     log_out if logged_in? 
     session.delete(:spotify_user_data)

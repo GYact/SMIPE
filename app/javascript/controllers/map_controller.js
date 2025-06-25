@@ -45,7 +45,7 @@ export default class extends Controller {
         // 位置情報表示を更新
         this.updateLocationDisplay(latitude, longitude, accuracy);
 
-        // 位置情報をサーバへ送信
+        // 位置情報をサーバーへ送信
         this.sendLocationToServer(latitude, longitude);
 
         // 地図の中心を取得位置に移動し、マーカー表示
@@ -63,6 +63,13 @@ export default class extends Controller {
               経度: ${longitude.toFixed(6)}
             </div>
           `).openPopup();
+
+        // 位置情報をJavaScriptの値として更新
+        this.userLocationValue = {
+          latitude: latitude,
+          longitude: longitude,
+          location_name: `緯度: ${latitude.toFixed(4)}, 経度: ${longitude.toFixed(4)}`
+        };
       },
       (error) => {
         console.error("位置情報取得失敗:", error);
@@ -241,7 +248,10 @@ export default class extends Controller {
       location: location
     });
 
-    if (!location.latitude || !location.longitude) {
+    // 位置情報の妥当性チェックを改善
+    if (!location.latitude || !location.longitude || 
+        location.latitude === 0 || location.longitude === 0 ||
+        isNaN(location.latitude) || isNaN(location.longitude)) {
       console.error("位置情報が不正です:", location);
       this.showStatus("位置情報が正しく設定されていません。位置を更新してください。", "error");
       return;

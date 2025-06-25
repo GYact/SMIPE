@@ -2,11 +2,20 @@ class MapsController < ApplicationController
   before_action :require_login
   
   def index
-    @user_location = {
-      latitude: current_user.latitude || 0,
-      longitude: current_user.longitude || 0,
-      location_name: current_user.location_name
-    }
+    # ユーザーの位置情報を取得（0の場合はnullに設定）
+    @user_location = if current_user.has_location?
+      {
+        latitude: current_user.latitude,
+        longitude: current_user.longitude,
+        location_name: current_user.location_name
+      }
+    else
+      {
+        latitude: nil,
+        longitude: nil,
+        location_name: nil
+      }
+    end
 
     if session[:spotify_user_data]
       @spotify_user = RSpotify::User.new(session[:spotify_user_data])
