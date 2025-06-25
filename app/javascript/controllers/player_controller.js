@@ -1,7 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["albumArt", "albumImage"]
+  static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"]
+  static values = { playing: Boolean }
 
   connect() {
     console.log('Player controller connected');
@@ -10,6 +11,27 @@ export default class extends Controller {
     this.isDragging = false
     this.dragDirection = null // 'horizontal' or 'vertical'
     this.setupTouchEvents()
+  }
+
+  togglePlay() {
+    this.playingValue = !this.playingValue;
+    // ここに実際の再生/停止API呼び出しロジックを追加します
+    // 例: this.player.togglePlay();
+  }
+
+  playingValueChanged() {
+    console.log(`Playing state changed to: ${this.playingValue}`);
+    if (this.playingValue) {
+      // 再生中の状態
+      this.playIconTarget.style.display = 'none';
+      this.pauseIconTarget.style.display = 'inline';
+      this.playLabelTarget.textContent = 'PAUSE';
+    } else {
+      // 停止中の状態
+      this.playIconTarget.style.display = 'inline';
+      this.pauseIconTarget.style.display = 'none';
+      this.playLabelTarget.textContent = 'PLAY';
+    }
   }
 
   setupTouchEvents() {

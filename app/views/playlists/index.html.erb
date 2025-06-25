@@ -86,6 +86,7 @@
   border-radius: 8px;
   padding: 16px;
   transition: background-color 0.3s;
+  cursor: pointer;
 }
 
 .playlist-card:hover {
@@ -117,6 +118,54 @@
   font-size: 12px;
   color: #B3B3B3;
 }
+
+.playlist-tracks-list {
+  margin-top: 16px;
+  padding: 16px;
+  background: #181818;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.track-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #282828;
+}
+
+.track-item:last-child {
+  border-bottom: none;
+}
+
+.track-info {
+  flex: 1;
+}
+
+.track-name {
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.track-artist {
+  color: #B3B3B3;
+  font-size: 12px;
+}
+
+.tracks-loading {
+  color: #B3B3B3;
+  text-align: center;
+  padding: 20px;
+}
+
+.track-error {
+  color: #ff4444;
+  text-align: center;
+  padding: 20px;
+}
 </style>
 
 <script>
@@ -128,9 +177,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const playlistId = this.dataset.playlistId;
       const tracksList = this.querySelector('.playlist-tracks-list');
       
+      console.log('Playlist card clicked:', playlistId);
+      
       // 既に開いている場合は閉じる
       if (tracksList.style.display === 'block') {
         tracksList.style.display = 'none';
+        console.log('Closing tracks list');
         return;
       }
       
@@ -143,8 +195,10 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // トラックリストを表示
       tracksList.style.display = 'block';
+      console.log('Opening tracks list for playlist:', playlistId);
       
       try {
+        console.log('Fetching tracks from:', `/playlists/${playlistId}/tracks`);
         const response = await fetch(`/playlists/${playlistId}/tracks`, {
           headers: {
             'Accept': 'application/json',
@@ -152,21 +206,29 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         });
         
+        console.log('Response status:', response.status);
+        
         if (response.ok) {
           const tracks = await response.json();
+          console.log('Tracks received:', tracks);
+          
           if (tracks.error) {
             throw new Error(tracks.error);
           }
+          
           tracksList.innerHTML = tracks.map(track => `
             <div class="track-item">
               <div class="track-info">
                 <div class="track-name">${track.name}</div>
-                <div class="track-artist">${track.artists.map(artist => artist.name).join(', ')}</div>
+                <div class="track-artist">${track.artists.join(', ')}</div>
               </div>
             </div>
           `).join('');
+          
+          console.log('Tracks list updated successfully');
         } else {
           const errorData = await response.json();
+          console.error('Server error:', errorData);
           throw new Error(errorData.error || 'Failed to load tracks');
         }
       } catch (error) {
