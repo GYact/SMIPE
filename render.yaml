@@ -1,7 +1,3 @@
-databases:
-  - name: smipe-db
-    plan: free
-
 services:
   # Rails Web Service (from Docker)
   - type: web
@@ -10,12 +6,12 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     healthCheckPath: /up
-    preDeployCommand: "bundle exec rails db:migrate" # Run migrations before deploy
+    preDeployCommand: "bundle exec rails db:prepare"
+    disks:
+      - name: smipe-sqlite-disk
+        mountPath: /app/storage
+        sizeGB: 1
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: smipe-db
-          property: connectionString
       - key: RAILS_MASTER_KEY
         sync: false
       - key: SPOTIFY_CLIENT_ID
