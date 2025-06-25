@@ -49,6 +49,7 @@ class User < ApplicationRecord
   def spotify_user
     return nil unless session[:spotify_user_data]
     @spotify_user ||= RSpotify::User.new(session[:spotify_user_data])
+    image.presence
   end
 
 end
