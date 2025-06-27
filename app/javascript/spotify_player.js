@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     player.addListener('ready', ({ device_id }) => {
       console.log('Spotify Player ready with Device ID:', device_id);
       window.spotifyDeviceId = device_id;
+      // Notify other scripts that the player is ready
+      const event = new CustomEvent('spotifyPlayerReady', { detail: { deviceId: device_id } });
+      document.dispatchEvent(event);
     });
 
     player.addListener('not_ready', ({ device_id }) => {
