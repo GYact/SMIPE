@@ -25,4 +25,8 @@ test:
 # is mounted as a persistent Docker volume in config/deploy.yml.
 production:
   <<: *default
-  database: storage/production.sqlite3
+  database: /app/storage/production.sqlite3
+
+cable:
+<<: *default
+database: /app/storage/cable.sqlite3
