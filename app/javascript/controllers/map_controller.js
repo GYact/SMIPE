@@ -219,15 +219,20 @@ export default class extends Controller {
 
   // プレイリストのマーカーを追加
   addPlaylistMarker(location) {
+    const userNickname = location.user_nickname || '不明なユーザー';
+    const userImage = location.user_image || '';
     const marker = L.marker([location.latitude, location.longitude])
       .bindPopup(`
         <div class="playlist-marker-popup">
           <h4>${location.name}</h4>
           <p>場所: ${location.location_name}</p>
           <p>保存日時: ${new Date(location.created_at).toLocaleString('ja-JP')}</p>
+          <div class="user-info">
+            ${userImage ? `<img src="${userImage}" alt="${userNickname}" class="user-avatar" style="width:32px;height:32px;border-radius:50%;margin-right:8px;">` : ''}
+            <span>保存者: ${userNickname}</span>
+          </div>
         </div>
       `);
-    
     marker.addTo(this.map);
     this.playlistMarkers.push(marker);
   }

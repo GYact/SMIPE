@@ -3,32 +3,51 @@ class PlayerController < ApplicationController
 
   def show
     if session[:spotify_user_data]
-      @spotify_user = RSpotify::User.new(session[:spotify_user_data])
-      @playlists = @spotify_user.playlists
-      @all_track_uris = []
-      @playlists.each do |playlist|
-        tracks = playlist.tracks
-        @all_track_uris.concat(tracks.map(&:uri))
-      end
-      first_playlist = @playlists.first
-      if first_playlist && first_playlist.tracks.any?
-        @first_track = first_playlist.tracks.first
-        @first_track_uri = @first_track.uri
-      else
-        @first_track = nil
-        @first_track_uri = nil
-      end
-      @access_token = session[:spotify_user_data]["credentials"]["token"]
+      begin
+        # RSpotifyが期待するデータ構造を再構築
+        spotify_user_data = {
+          'credentials' => {
+            'token' => session[:spotify_user_data]['credentials']['token'],
+            'refresh_token' => session[:spotify_user_data]['credentials']['refresh_token'],
+            'expires' => session[:spotify_user_data]['credentials']['expires'],
+            'expires_at' => session[:spotify_user_data]['credentials']['expires_at']
+          },
+          'id' => session[:spotify_user_data]['uid'],
+          'info' => session[:spotify_user_data]['info']
+        }
+        
+        @spotify_user = RSpotify::User.new(spotify_user_data)
+        @playlists = @spotify_user.playlists
+        @all_track_uris = []
+        @playlists.each do |playlist|
+          tracks = playlist.tracks
+          @all_track_uris.concat(tracks.map(&:uri))
+        end
+        first_playlist = @playlists.first
+        if first_playlist && first_playlist.tracks.any?
+          @first_track = first_playlist.tracks.first
+          @first_track_uri = @first_track.uri
+        else
+          @first_track = nil
+          @first_track_uri = nil
+        end
+        @access_token = session[:spotify_user_data]["credentials"]["token"]
 
-      @user_location = current_user.has_location? ? {
-        latitude: current_user.latitude,
-        longitude: current_user.longitude,
-        location_name: current_user.location_name,
-        last_updated: current_user.last_location_update,
-        is_stale: current_user.location_stale?
-      } : nil
+        @user_location = current_user.has_location? ? {
+          latitude: current_user.latitude,
+          longitude: current_user.longitude,
+          location_name: current_user.location_name,
+          last_updated: current_user.last_location_update,
+          is_stale: current_user.location_stale?
+        } : nil
+      rescue => e
+        Rails.logger.error "RSpotify error: #{e.message}"
+        log_out
+        session.delete(:spotify_user_data)
+        flash[:warning] = "Spotifyとの連携に問題が発生しました。再度ログインしてください。"
+        redirect_to root_path
+      end
     else
-
       log_out
       session.delete(:spotify_user_data)
       flash[:warning] = "Spotifyとの連携が必要です。再度ログインしてください。"
@@ -38,19 +57,36 @@ class PlayerController < ApplicationController
 
   def save
     if session[:spotify_user_data]
-      spotify_user = RSpotify::User.new(session[:spotify_user_data])
-      playlists = spotify_user.playlists
+      begin
+        # RSpotifyが期待するデータ構造を再構築
+        spotify_user_data = {
+          'credentials' => {
+            'token' => session[:spotify_user_data]['credentials']['token'],
+            'refresh_token' => session[:spotify_user_data]['credentials']['refresh_token'],
+            'expires' => session[:spotify_user_data]['credentials']['expires'],
+            'expires_at' => session[:spotify_user_data]['credentials']['expires_at']
+          },
+          'id' => session[:spotify_user_data]['uid'],
+          'info' => session[:spotify_user_data]['info']
+        }
+        
+        spotify_user = RSpotify::User.new(spotify_user_data)
+        playlists = spotify_user.playlists
 
-      playlists.each do |playlist|
-        current_user.playlists.create(
-          spotify_id: playlist.id,
-          name: playlist.name,
-          latitude: current_user.latitude,
-          longitude: current_user.longitude
-        )
+        playlists.each do |playlist|
+          current_user.playlists.create(
+            spotify_id: playlist.id,
+            name: playlist.name,
+            latitude: current_user.latitude,
+            longitude: current_user.longitude
+          )
+        end
+
+        render json: { status: 'success' }
+      rescue => e
+        Rails.logger.error "RSpotify error in save: #{e.message}"
+        render json: { status: 'error', message: 'Spotifyとの連携に問題が発生しました。' }, status: :unprocessable_entity
       end
-
-      render json: { status: 'success' }
     else
       render json: { status: 'error', message: 'Spotifyセッションが無効です。' }, status: :unauthorized
     end
@@ -102,8 +138,20 @@ class PlayerController < ApplicationController
   end
 
   def locations
-    @playlist_locations = current_user.playlist_locations.order(created_at: :desc)
-    render json: @playlist_locations
+    @playlist_locations = PlaylistLocation.includes(:user).order(created_at: :desc)
+    render json: @playlist_locations.map { |location|
+      {
+        id: location.id,
+        name: location.name,
+        uri: location.uri,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        location_name: location.location_name,
+        created_at: location.created_at,
+        user_nickname: location.user&.nickname || location.user&.name || "不明なユーザー",
+        user_image: location.user&.image
+      }
+    }
   end
 
   private

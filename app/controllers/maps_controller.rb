@@ -18,12 +18,30 @@ class MapsController < ApplicationController
     end
 
     if session[:spotify_user_data]
-      @spotify_user = RSpotify::User.new(session[:spotify_user_data])
-      @playlists = @spotify_user.playlists.map do |playlist|
-        {
-          name: playlist.name,
-          uri: playlist.uri
+      begin
+        # RSpotifyが期待するデータ構造を再構築
+        spotify_user_data = {
+          'credentials' => {
+            'token' => session[:spotify_user_data]['credentials']['token'],
+            'refresh_token' => session[:spotify_user_data]['credentials']['refresh_token'],
+            'expires' => session[:spotify_user_data]['credentials']['expires'],
+            'expires_at' => session[:spotify_user_data]['credentials']['expires_at']
+          },
+          'id' => session[:spotify_user_data]['uid'],
+          'info' => session[:spotify_user_data]['info']
         }
+        
+        @spotify_user = RSpotify::User.new(spotify_user_data)
+        @playlists = @spotify_user.playlists.map do |playlist|
+          {
+            name: playlist.name,
+            uri: playlist.uri
+          }
+        end
+      rescue => e
+        Rails.logger.error "RSpotify error in maps: #{e.message}"
+        @playlists = []
+        flash[:warning] = "Spotifyとの連携に問題が発生しました。"
       end
     else
       @playlists = []

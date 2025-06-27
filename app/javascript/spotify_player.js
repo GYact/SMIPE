@@ -1,10 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // プレイヤーページでは独自の初期化があるため、スキップ
+  if (window.location.pathname === '/player') {
+    return;
+  }
+
   const tokenMeta = document.querySelector('meta[name="spotify-token"]');
   if (!tokenMeta) {
     console.warn('Spotify token not found in meta tags');
     return;
   }
   const token = tokenMeta.content;
+
+  // 既に初期化されている場合はスキップ
+  if (window.onSpotifyWebPlaybackSDKReady) {
+    return;
+  }
 
   window.onSpotifyWebPlaybackSDKReady = () => {
     const player = new Spotify.Player({
@@ -55,7 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  const script = document.createElement('script');
-  script.src = "https://sdk.scdn.co/spotify-player.js";
-  document.body.appendChild(script);
+  // Spotify Web Playback SDKがまだ読み込まれていない場合のみ読み込む
+  if (!document.querySelector('script[src*="spotify-player.js"]')) {
+    const script = document.createElement('script');
+    script.src = "https://sdk.scdn.co/spotify-player.js";
+    document.body.appendChild(script);
+  }
 });
