@@ -1,0 +1,131 @@
+.album-art-section {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.album-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  will-change: transform, opacity;
+  transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.album-art:active {
+  cursor: grabbing;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.album-art:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* スワイプ方向のインジケーター */
+.swipe-indicator {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.swipe-indicator.right {
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.swipe-indicator.left {
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.swipe-indicator.up {
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.swipe-indicator.down {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* スワイプ中の視覚的フィードバック */
+.swiping {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.swiping::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.swiping.active::before {
+  opacity: 1;
+}
+
+/* トランジションアニメーション */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.album-art-section {
+  animation: fadeIn 0.5s ease;
+}
+
+/* スワイプ方向に応じた背景グラデーション */
+.swipe-right {
+  background: linear-gradient(90deg, rgba(29,185,84,0.1), transparent);
+}
+
+.swipe-left {
+  background: linear-gradient(-90deg, rgba(255,0,0,0.1), transparent);
+}
+
+.swipe-up {
+  background: linear-gradient(0deg, rgba(29,185,84,0.1), transparent);
+}
+
+.swipe-down {
+  background: linear-gradient(180deg, rgba(29,185,84,0.1), transparent);
+} 
