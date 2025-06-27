@@ -1,0 +1,22 @@
+{
+  "builds": [
+    {
+      "src": "Gemfile.lock",
+      "use": "@vercel/ruby"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/public/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.rb"
+    }
+  ]
+}
