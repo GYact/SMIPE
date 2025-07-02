@@ -41,3 +41,6 @@ production:
   queue:
     <<: *default
     database: /app/storage/queue.sqlite3
+  cache:
+    <<: *default
+    database: /app/storage/cache.sqlite3
