@@ -46,6 +46,10 @@ class User < ApplicationRecord
     last_location_update < hours.hours.ago
   end
 
+  def spotify_image_url
+    image.presence
+  end  
+
   def rspotify_user
     return nil unless self.spotify_data.present?
     RSpotify::User.new(self.spotify_data)
