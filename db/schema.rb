@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_27_084428) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_02_052726) do
   create_table "artists", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -29,6 +29,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_27_084428) do
     t.index ["user_id"], name: "index_playlist_locations_on_user_id"
   end
 
+  create_table "playlists", force: :cascade do |t|
+    t.string "name"
+    t.integer "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "spotify_id"
+    t.float "latitude"
+    t.float "longitude"
+    t.index ["user_id"], name: "index_playlists_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "uid"
     t.string "nickname"
@@ -43,4 +54,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_27_084428) do
   end
 
   add_foreign_key "playlist_locations", "users"
+  add_foreign_key "playlists", "users"
 end
