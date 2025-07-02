@@ -4,7 +4,7 @@
     <p class="app-tagline">音楽で、世界とつながる。あなたのいる場所が、新しいプレイリストになる。</p>
     <div class="login-box">
       <% if !logged_in? %>
-        <%= link_to '/auth/spotify', class: 'login-link' do %>
+        <%= link_to '/auth/spotify', class: 'login-link', data: { turbo: false } do %>
           <i class="fab fa-spotify"></i> Spotifyでログイン
         <% end %>
       <% end %>

@@ -6,6 +6,7 @@ class User < ApplicationRecord
     greater_than_or_equal_to: -90, 
     less_than_or_equal_to: 90 
   }, allow_nil: true
+
   validates :longitude, numericality: { 
     greater_than_or_equal_to: -180, 
     less_than_or_equal_to: 180 
@@ -46,13 +47,17 @@ class User < ApplicationRecord
     last_location_update < hours.hours.ago
   end
 
-  def spotify_image_url
-    image.presence
-  end  
+  # プレイリスト関連
+  has_many :playlist_locations, dependent: :destroy
 
+  # Spotify情報の再構築用
   def rspotify_user
     return nil unless self.spotify_data.present?
     RSpotify::User.new(self.spotify_data)
   end
 
+  # Spotify画像用
+  def spotify_image_url
+    image.presence
+  end
 end
