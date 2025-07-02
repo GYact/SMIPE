@@ -2,11 +2,10 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["tracksList"]
-  static values = { playlistId: String }
 
   async toggleTracks(event) {
     const card = event.currentTarget;
-    const playlistId = this.playlistIdValue; // Stimulus valueからplaylistIdを取得
+    const playlistId = card.dataset.playlistsPlaylistIdValue; // クリックされたカードから直接IDを取得
     const tracksList = card.querySelector('[data-playlists-target="tracksList"]');
 
     console.log('Playlist card clicked:', playlistId);
