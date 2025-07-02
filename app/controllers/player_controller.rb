@@ -38,7 +38,7 @@ class PlayerController < ApplicationController
         @first_track = nil
         @first_track_uri = nil
       end
-      @access_token = session[:spotify_user_data]["credentials"]["token"]
+      # @access_token = session[:spotify_user_data]["credentials"]["token"] # この行は重複するので削除
 
       # 位置情報関連のデータを追加
       @user_location = current_user.has_location? ? {
