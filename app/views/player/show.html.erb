@@ -1,12 +1,28 @@
 <div class="player-container">
-
-  <main class="player-content">
-    <div class="album-art-section">
+  <main class="player-content" data-controller="player" data-player-playing-value="false">
+    <div class="album-art-section" id="album-art-section" data-player-target="albumArt">
       <% if @first_track && @first_track.album && @first_track.album.images.any? %>
-        <%= image_tag @first_track.album.images.first['url'], alt: "Album Art", class: "album-image" %>
+        <%= image_tag @first_track.album.images.first['url'], alt: "Album Art", class: "album-image", data: { player_target: "albumImage" } %>
       <% else %>
-        <%= image_tag "image.png", alt: "Album Art", class: "album-image" %>
+        <%= image_tag "image.png", alt: "Album Art", class: "album-image", data: { player_target: "albumImage" } %>
       <% end %>
+
+      <!-- スワイプインジケーター -->
+      <div class="swipe-indicator right">
+        <i class="fas fa-heart"></i>
+      </div>
+      <div class="swipe-indicator left">
+        <i class="fas fa-times"></i>
+      </div>
+      <div class="swipe-indicator up">
+        <i class="fas fa-chevron-up"></i>
+      </div>
+      <div class="swipe-indicator down">
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      
+      <!-- スワイプ中の視覚的フィードバック -->
+      <div class="swiping"></div>
 
       <div class="track-details">
         <p class="song-title"><%= @first_track&.name || 'No Track' %></p>
@@ -15,14 +31,20 @@
     </div>
 
     <div class="player-actions">
-      <button id="play-pause-btn" class="action-button play-button">
-        <svg id="play-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+      <button id="play-pause-btn" class="action-button play-button" data-action="click->player#togglePlay">
+        <svg id="play-icon" data-player-target="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M8 5v14l11-7z"/>
         </svg>
-        <svg id="pause-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+        <svg id="pause-icon" data-player-target="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
           <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
         </svg>
-        <span>Play</span>
+        <span data-player-target="playLabel">PLAY</span>
+      </button>
+      <button class="action-button shuffle-button" id="shuffle-button">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zM14.83 13.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+        </svg>
+        <span>Shuffle</span>
       </button>
       <button class="action-button skip-button" id="skip-button">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -37,6 +59,31 @@
         <span>Like</span>
       </button>
     </div>
+
+    <div class="playlist-selection">
+      <button id="toggle-playlist-selection" class="playlist-selection-button">
+        <i class="fas fa-list"></i> プレイリストの変更
+      </button>
+      <div id="playlist-selection-panel" class="playlist-selection-panel" style="display: none;">
+        <h4>プレイリストを選択</h4>
+        <div class="playlist-list">
+          <% @playlists.each do |playlist| %>
+            <div class="playlist-option">
+              <input type="radio" 
+                     name="selected_playlist" 
+                     id="playlist_<%= playlist.id %>" 
+                     value="<%= playlist.id %>"
+                     data-playlist-name="<%= playlist.name %>"
+                     <%= playlist.id == @selected_playlist_id ? 'checked' : '' %>>
+              <label for="playlist_<%= playlist.id %>">
+                <%= playlist.name %>
+                <span class="track-count">(<%= playlist.tracks.count %>曲)</span>
+              </label>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
     
     <section class="up-next">
       <h3>Up Next</h3>
@@ -50,135 +97,409 @@
 <% if @first_track_uri.present? && @all_track_uris.present? %>
   <input type="hidden" id="all-track-uris" value='<%= @all_track_uris.to_json %>'>
   <meta name="spotify-token" content="<%= @access_token %>">
+  <meta name="selected-playlist-id" content="<%= @selected_playlist_id %>">
+
+  <style>
+    .playlist-selection {
+      margin-top: 20px;
+      padding: 0 20px;
+    }
+
+    .playlist-selection-button {
+      width: 100%;
+      padding: 12px;
+      background: #282828;
+      border: none;
+      border-radius: 8px;
+      color: #FFFFFF;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.2s;
+    }
+
+    .playlist-selection-button:hover {
+      background: #383838;
+    }
+
+    .playlist-selection-panel {
+      margin-top: 16px;
+      padding: 16px;
+      background: #282828;
+      border-radius: 8px;
+    }
+
+    .playlist-selection-panel h4 {
+      color: #FFFFFF;
+      margin: 0 0 16px 0;
+      font-size: 16px;
+    }
+
+    .playlist-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .playlist-option {
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .playlist-option label {
+      color: #FFFFFF;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .track-count {
+      color: #B3B3B3;
+      font-size: 0.9em;
+    }
+
+    input[type="radio"] {
+      accent-color: #1DB954;
+    }
+  </style>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const tokenMeta = document.querySelector('meta[name="spotify-token"]');
       const token = tokenMeta ? tokenMeta.content : null;
       const trackUris = JSON.parse(document.getElementById('all-track-uris').value);
+      const selectedPlaylistId = document.querySelector('meta[name="selected-playlist-id"]').content;
 
       if (!token || !trackUris || trackUris.length === 0) return;
 
-      let device_id = null;
       let currentIndex = 0;
       let isPlaying = true;
       let isLiked = false;
+      let previousTracks = [];
+      let isShuffled = false;
 
-      window.onSpotifyWebPlaybackSDKReady = () => {
-        const player = new Spotify.Player({
-          name: 'SMIPE Player',
-          getOAuthToken: cb => { cb(token); },
-          volume: 0.5
-        });
+      const playerController = document.querySelector('[data-controller="player"]');
 
-        player.addListener('ready', ({ device_id: id }) => {
-          device_id = id;
-          console.log('Player ready with device ID', device_id);
-          playCurrentTrack();
-          updateUpNextDisplay();
-          updateCurrentTrackDisplay(trackUris[currentIndex]);
-          checkIfTrackIsLiked(trackUris[currentIndex]);
-        });
-
-        player.addListener('initialization_error', ({ message }) => console.error(message));
-        player.addListener('authentication_error', ({ message }) => console.error(message));
-        player.addListener('account_error', ({ message }) => console.error(message));
-        player.addListener('playback_error', ({ message }) => console.error(message));
-
-        player.connect();
-
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        const playIcon = document.getElementById('play-icon');
-        const pauseIcon = document.getElementById('pause-icon');
-        const skipButton = document.getElementById('skip-button');
-        const likeButton = document.getElementById('like-button');
-
-        playPauseBtn.addEventListener('click', () => {
-          if (isPlaying) {
-            player.pause().then(() => {
-              console.log('Paused playback');
-              playIcon.style.display = 'block';
-              pauseIcon.style.display = 'none';
-              playPauseBtn.querySelector('span').innerText = 'Play';
-              isPlaying = false;
-            });
+      // Helper to wait for device ID
+      function getDeviceId() {
+        return new Promise(resolve => {
+          if (window.spotifyDeviceId) {
+            resolve(window.spotifyDeviceId);
           } else {
-            player.resume().then(() => {
-              console.log('Resumed playback');
-              playIcon.style.display = 'none';
-              pauseIcon.style.display = 'block';
-              playPauseBtn.querySelector('span').innerText = 'Pause';
-              isPlaying = true;
-            });
+            document.addEventListener('spotifyPlayerReady', () => {
+              resolve(window.spotifyDeviceId);
+            }, { once: true });
           }
         });
+      }
+      
+      // プレイリスト選択パネルの表示/非表示
+      document.getElementById('toggle-playlist-selection').addEventListener('click', function() {
+        const panel = document.getElementById('playlist-selection-panel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      });
 
-        skipButton.addEventListener('click', () => {
-          currentIndex = (currentIndex + 1) % trackUris.length;
-          console.log(`Skipping to track index ${currentIndex}`);
-          playCurrentTrack();
-          updateUpNextDisplay();
-          checkIfTrackIsLiked(trackUris[currentIndex]);
+      // 曲をプレイリストに追加
+      async function addToPlaylist(trackUri) {
+        try {
+          const selectedPlaylist = document.querySelector('input[name="selected_playlist"]:checked');
+          if (!selectedPlaylist) {
+            console.error('No playlist selected');
+            return;
+          }
+
+          const playlistId = selectedPlaylist.value;
+          const playlistName = selectedPlaylist.dataset.playlistName;
+
+          // プレイリストの所有者権限を確認
+          const playlistResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (!playlistResponse.ok) {
+            throw new Error('Failed to access playlist');
+          }
+
+          const playlistData = await playlistResponse.json();
+          
+          // プレイリストが自分のものか確認
+          if (playlistData.owner.id !== '<%= @spotify_user.id %>') {
+            console.error('Cannot modify playlist: Not the owner');
+            alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
+            return;
+          }
+
+          const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              uris: [trackUri]
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            // 重複曲の場合はエラーメッセージを表示しない
+            if (errorData.error?.message?.includes('already exists')) {
+              console.log('Track already exists in playlist');
+              handleSkip();
+              return;
+            }
+            throw new Error(errorData.error?.message || 'Failed to add track to playlist');
+          }
+
+          console.log(`Added track to playlist: ${playlistName}`);
+          handleSkip();
+        } catch (error) {
+          console.error('Error adding track to playlist:', error);
+          // 重複曲以外のエラーの場合のみアラートを表示
+          if (!error.message?.includes('already exists')) {
+            alert('プレイリストへの曲の追加に失敗しました。');
+          }
+        }
+      }
+
+      // 曲をプレイリストから削除
+      async function removeFromPlaylist(trackUri) {
+        try {
+          const selectedPlaylist = document.querySelector('input[name="selected_playlist"]:checked');
+          if (!selectedPlaylist) {
+            console.error('No playlist selected');
+            return;
+          }
+
+          const playlistId = selectedPlaylist.value;
+          const playlistName = selectedPlaylist.dataset.playlistName;
+
+          // プレイリストの所有者権限を確認
+          const playlistResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (!playlistResponse.ok) {
+            throw new Error('Failed to access playlist');
+          }
+
+          const playlistData = await playlistResponse.json();
+          
+          // プレイリストが自分のものか確認
+          if (playlistData.owner.id !== '<%= @spotify_user.id %>') {
+            console.error('Cannot modify playlist: Not the owner');
+            alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
+            return;
+          }
+
+          const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              tracks: [{ uri: trackUri }]
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || 'Failed to remove track from playlist');
+          }
+
+          console.log(`Removed track from playlist: ${playlistName}`);
+          handleSkip();
+        } catch (error) {
+          console.error('Error removing track from playlist:', error);
+          alert('プレイリストからの曲の削除に失敗しました。');
+        }
+      }
+
+      // プレイリスト選択の変更を監視
+      document.querySelectorAll('input[name="selected_playlist"]').forEach(radio => {
+        radio.addEventListener('change', async function() {
+          if (this.checked) {
+            const playlistId = this.value;
+            const playlistName = this.dataset.playlistName;
+            
+            try {
+              // プレイリストの所有者権限を確認
+              const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (!response.ok) {
+                throw new Error('Failed to access playlist');
+              }
+
+              const playlistData = await response.json();
+              
+              // プレイリストが自分のものか確認
+              if (playlistData.owner.id !== '<%= @spotify_user.id %>') {
+                alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
+                // 前の選択に戻す
+                const previousSelection = document.querySelector('input[name="selected_playlist"][checked]');
+                if (previousSelection) {
+                  previousSelection.checked = true;
+                }
+                return;
+              }
+
+              // 選択をサーバーに保存
+              await fetch('/player/update_selected_playlist', {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ playlist_id: playlistId })
+              });
+
+              console.log(`Selected playlist: ${playlistName} (${playlistId})`);
+            } catch (error) {
+              console.error('Error selecting playlist:', error);
+              alert('プレイリストの選択に失敗しました。');
+            }
+          }
+        });
+      });
+
+      // Play the current track
+      async function playCurrentTrack() {
+        const deviceId = await getDeviceId();
+        if (!deviceId) {
+          console.error('Device ID not ready');
+          alert('プレイヤーの準備ができていません。少し待ってから再試行してください。');
+          return;
+        }
+
+        const currentTrackUri = trackUris[currentIndex];
+        if (!currentTrackUri) return;
+
+        fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            uris: [currentTrackUri]
+          })
+        }).then(() => {
+          console.log(`Now playing: ${currentTrackUri}`);
+        }).catch(err => {
+          console.error('Playback start error:', err);
+        });
+      }
+
+      function updateCurrentTrackDisplay(trackUri) {
+        const trackId = trackUri.split(':').pop();
+
+        fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(response => response.json())
+        .then(trackData => {
+          const albumImage = document.querySelector('.album-image');
+          albumImage.src = trackData.album.images[0]?.url || '';
+          albumImage.alt = trackData.name;
+
+          document.querySelector('.song-title').innerText = trackData.name;
+          document.querySelector('.artist-name').innerText = trackData.artists.map(a => a.name).join(', ');
+        })
+        .catch(err => console.error('Error updating current track display:', err));
+      }
+
+      function checkIfTrackIsLiked(trackUri) {
+        const trackId = trackUri.split(':').pop();
+        fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(response => response.json())
+        .then(results => {
+          isLiked = results[0];
+          const likeButton = document.getElementById('like-button');
+          if (likeButton) {
+            if (isLiked) {
+              likeButton.classList.add('liked');
+              likeButton.style.color = '#1DB954';
+            } else {
+              likeButton.classList.remove('liked');
+              likeButton.style.color = '#B3B3B3';
+            }
+          }
+        })
+        .catch(err => console.error('Error checking if track is liked:', err));
+      }
+
+      function handleSkip() {
+        console.log('Skip button clicked');
+        previousTracks.push(currentIndex);
+        currentIndex = (currentIndex + 1) % trackUris.length;
+        console.log(`Skipping to track index ${currentIndex}`);
+        playCurrentTrack();
+        updateCurrentTrackDisplay(trackUris[currentIndex]);
+        updateUpNextDisplay();
+        checkIfTrackIsLiked(trackUris[currentIndex]);
+        const skipButton = document.getElementById('skip-button');
+        if (skipButton) {
           skipButton.style.color = '#1DB954';
           setTimeout(() => {
             skipButton.style.color = '#B3B3B3';
           }, 500);
-        });
-
-        likeButton.addEventListener('click', () => {
-          const trackId = trackUris[currentIndex].split(':').pop();
-          if (!isLiked) {
-            // Add to library
-            fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            }).then(() => {
-              isLiked = true;
-              likeButton.classList.add('liked');
-              likeButton.style.color = '#1DB954';
-            });
-          } else {
-            // Remove from library
-            fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
-              method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            }).then(() => {
-              isLiked = false;
-              likeButton.classList.remove('liked');
-              likeButton.style.color = '#B3B3B3';
-            });
-          }
-        });
-
-        function playCurrentTrack() {
-          if (!device_id) {
-            console.error('Device ID not ready');
-            return;
-          }
-
-          const currentTrackUri = trackUris[currentIndex];
-          fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              uris: [currentTrackUri]
-            })
-          }).then(() => {
-            console.log(`Now playing: ${currentTrackUri}`);
-            updateCurrentTrackDisplay(currentTrackUri);
-          }).catch(err => {
-            console.error('Playback start error:', err);
-          });
         }
+      }
 
-        function updateCurrentTrackDisplay(trackUri) {
+      function handleNext() {
+        console.log('Next track (swipe up)');
+        previousTracks.push(currentIndex);
+        currentIndex = (currentIndex + 1) % trackUris.length;
+        console.log(`Moving to next track index ${currentIndex}`);
+        playCurrentTrack();
+        updateCurrentTrackDisplay(trackUris[currentIndex]);
+        updateUpNextDisplay();
+        checkIfTrackIsLiked(trackUris[currentIndex]);
+      }
+
+      function handlePrevious() {
+        console.log('Previous track (swipe down)');
+        if (previousTracks.length > 0) {
+          currentIndex = previousTracks.pop();
+          console.log(`Moving to previous track index ${currentIndex}`);
+        } else {
+          // 履歴がない場合は最後の曲に移動
+          currentIndex = (currentIndex - 1 + trackUris.length) % trackUris.length;
+          console.log(`Moving to last track index ${currentIndex}`);
+        }
+        playCurrentTrack();
+        updateCurrentTrackDisplay(trackUris[currentIndex]);
+        updateUpNextDisplay();
+        checkIfTrackIsLiked(trackUris[currentIndex]);
+      }
+
+      function updateUpNextDisplay() {
+        const upNextItems = document.getElementById('up-next-items');
+        upNextItems.innerHTML = '';
+
+        for (let i = 1; i <= 3; i++) {
+          const nextIndex = (currentIndex + i) % trackUris.length;
+          const trackUri = trackUris[nextIndex];
           const trackId = trackUri.split(':').pop();
 
           fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
@@ -188,79 +509,227 @@
           })
           .then(response => response.json())
           .then(trackData => {
-            const albumImage = document.querySelector('.album-image');
-            albumImage.src = trackData.album.images[0]?.url || '';
-            albumImage.alt = trackData.name;
+            const itemDiv = document.createElement('div');
+            itemDiv.classList.add('up-next-item');
+            itemDiv.style.cursor = 'pointer';
+            itemDiv.style.display = 'flex';
+            itemDiv.style.alignItems = 'center';
+            itemDiv.style.padding = '10px';
+            itemDiv.style.borderRadius = '8px';
+            itemDiv.style.transition = 'background-color 0.2s';
+            
+            itemDiv.addEventListener('mouseover', () => {
+              itemDiv.style.backgroundColor = '#282828';
+            });
+            
+            itemDiv.addEventListener('mouseout', () => {
+              itemDiv.style.backgroundColor = 'transparent';
+            });
+            
+            itemDiv.addEventListener('click', () => {
+              currentIndex = nextIndex;
+              playCurrentTrack();
+              updateCurrentTrackDisplay(trackUri);
+              updateUpNextDisplay();
+              checkIfTrackIsLiked(trackUri);
+            });
+            
+            const img = document.createElement('img');
+            img.src = trackData.album.images[0]?.url || '';
+            img.alt = 'Album Art';
+            img.style.width = '60px';
+            img.style.height = '60px';
+            img.style.borderRadius = '4px';
+            img.style.marginRight = '15px';
 
-            document.querySelector('.song-title').innerText = trackData.name;
-            document.querySelector('.artist-name').innerText = trackData.artists.map(a => a.name).join(', ');
+            const textDiv = document.createElement('div');
+            textDiv.style.flex = '1';
+
+            const title = document.createElement('p');
+            title.innerText = trackData.name;
+            title.style.margin = '0';
+            title.style.fontWeight = 'bold';
+
+            const artist = document.createElement('p');
+            artist.innerText = trackData.artists.map(a => a.name).join(', ');
+            artist.style.margin = '0';
+            artist.style.color = '#B3B3B3';
+            artist.style.fontSize = '0.9em';
+
+            textDiv.appendChild(title);
+            textDiv.appendChild(artist);
+
+            itemDiv.appendChild(img);
+            itemDiv.appendChild(textDiv);
+
+            upNextItems.appendChild(itemDiv);
           })
-          .catch(err => console.error('Error updating current track display:', err));
+          .catch(err => console.error('Error updating up next display:', err));
         }
+      }
 
-        function checkIfTrackIsLiked(trackUri) {
-          const trackId = trackUri.split(':').pop();
-          fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-          .then(response => response.json())
-          .then(results => {
-            isLiked = results[0];
-            if (isLiked) {
-              likeButton.classList.add('liked');
-              likeButton.style.color = '#1DB954';
-            } else {
-              likeButton.classList.remove('liked');
-              likeButton.style.color = '#B3B3B3';
-            }
-          })
-          .catch(err => console.error('Error checking if track is liked:', err));
+      // スワイプイベントのリスナーを更新
+      playerController.addEventListener('swipeRight', async () => {
+        try {
+          console.log('Swipe right detected');
+          const trackUri = trackUris[currentIndex];
+          await addToPlaylist(trackUri);
+        } catch (error) {
+          console.error('An error occurred during swipeRight:', error);
+          alert('操作中にエラーが発生しました。しばらくしてからもう一度お試しください。');
+          // エラーが発生しても、次の曲へ進むなどのフォールバック処理をここに入れることも可能
+          handleSkip();
         }
+      });
 
-        function updateUpNextDisplay() {
-          const upNextItems = document.getElementById('up-next-items');
-          upNextItems.innerHTML = '';
+      playerController.addEventListener('swipeLeft', async () => {
+        try {
+          console.log('Swipe left detected');
+          const trackUri = trackUris[currentIndex];
+          await removeFromPlaylist(trackUri);
+        } catch (error) {
+          console.error('An error occurred during swipeLeft:', error);
+          alert('操作中にエラーが発生しました。しばらくしてからもう一度お試しください。');
+          handleSkip();
+        }
+      });
 
-          for (let i = 1; i <= 3; i++) {
-            const nextIndex = (currentIndex + i) % trackUris.length;
-            const trackUri = trackUris[nextIndex];
-            const trackId = trackUri.split(':').pop();
+      playerController.addEventListener('swipeUp', () => {
+        try {
+          console.log('Swipe up detected');
+          handleNext();
+        } catch (error) {
+          console.error('An error occurred during swipeUp:', error);
+          alert('操作中にエラーが発生しました。しばらくしてからもう一度お試しください。');
+        }
+      });
 
-            fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            })
-            .then(response => response.json())
-            .then(trackData => {
-              const itemDiv = document.createElement('div');
-              itemDiv.classList.add('up-next-item');
-              
-              const img = document.createElement('img');
-              img.src = trackData.album.images[0]?.url || '';
-              img.alt = 'Album Art';
-              img.style.width = '60px';
-              img.style.height = '60px';
-              img.style.borderRadius = '4px';
-              img.style.marginRight = '15px';
+      playerController.addEventListener('swipeDown', () => {
+        try {
+          console.log('Swipe down detected');
+          handlePrevious();
+        } catch (error) {
+          console.error('An error occurred during swipeDown:', error);
+          alert('操作中にエラーが発生しました。しばらくしてからもう一度お試しください。');
+        }
+      });
 
-              const textDiv = document.createElement('div');
-              textDiv.style.flex = '1';
-              textDiv.innerHTML = `
-                <div style="font-weight: bold; color: #FFFFFF; margin-bottom: 4px;">${trackData.name}</div>
-                <div style="font-size: 0.9em; color: #B3B3B3;">${trackData.artists.map(a => a.name).join(', ')}</div>
-              `;
+      // シャッフル機能
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
 
-              itemDiv.appendChild(img);
-              itemDiv.appendChild(textDiv);
-              upNextItems.appendChild(itemDiv);
-            })
-            .catch(err => console.error('Error loading next track info:', err));
+      // シャッフルボタンのイベントリスナー
+      document.getElementById('shuffle-button').addEventListener('click', function() {
+        isShuffled = !isShuffled;
+        this.style.color = isShuffled ? '#1DB954' : '#B3B3B3';
+        if (isShuffled) {
+          const shuffledTracks = shuffleArray([...trackUris]);
+          trackUris.splice(0, trackUris.length, ...shuffledTracks);
+          currentIndex = 0;
+          playCurrentTrack();
+          updateCurrentTrackDisplay(trackUris[currentIndex]);
+          updateUpNextDisplay();
+          checkIfTrackIsLiked(trackUris[currentIndex]);
+        }
+      });
+
+      // Skipボタンのイベントリスナー
+      document.getElementById('skip-button').addEventListener('click', handleSkip);
+
+      // Likeボタンのイベントリスナー
+      document.getElementById('like-button').addEventListener('click', function() {
+        const trackUri = trackUris[currentIndex];
+        const trackId = trackUri.split(':').pop();
+        const method = isLiked ? 'DELETE' : 'PUT';
+
+        fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
+          method: method,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }).then(response => {
+          if (response.ok) {
+            isLiked = !isLiked; // 状態を反転
+            handleLike(isLiked); // UI更新と次の曲へ
+          } else {
+            console.error('Failed to update like status');
+            alert('いいねの状態の更新に失敗しました。');
+          }
+        }).catch(err => {
+          console.error('Error updating like status:', err);
+          alert('いいねの状態の更新中にエラーが発生しました。');
+        });
+      });
+
+      function handleLike(isAdd) {
+        console.log(`Like button clicked: ${isAdd ? 'Add' : 'Remove'}`);
+        previousTracks.push(currentIndex);
+        currentIndex = (currentIndex + 1) % trackUris.length;
+        console.log(`Skipping to track index ${currentIndex}`);
+        playCurrentTrack();
+        updateCurrentTrackDisplay(trackUris[currentIndex]);
+        updateUpNextDisplay();
+        checkIfTrackIsLiked(trackUris[currentIndex]);
+        const likeButton = document.getElementById('like-button');
+        if (likeButton) {
+          if (isAdd) {
+            likeButton.classList.add('liked');
+            likeButton.style.color = '#1DB954';
+          } else {
+            likeButton.classList.remove('liked');
+            likeButton.style.color = '#B3B3B3';
           }
         }
-      };
+      }
+
+      playCurrentTrack();
+      updateCurrentTrackDisplay(trackUris[currentIndex]);
+      updateUpNextDisplay();
+      checkIfTrackIsLiked(trackUris[currentIndex]);
     });
   </script>
 <% end %>
+
+<style>
+.album-art-section {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.album-image {
+  width: 300px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  will-change: transform;
+  touch-action: none;
+}
+
+.track-details {
+  text-align: center;
+}
+
+.song-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0;
+}
+
+.artist-name {
+  color: #B3B3B3;
+  margin: 5px 0;
+}
+</style>

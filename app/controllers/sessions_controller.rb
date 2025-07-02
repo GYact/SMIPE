@@ -52,7 +52,7 @@ class SessionsController < ApplicationController
     log_out if logged_in? 
     session.delete(:spotify_user_data)
     flash[:success] = "ログアウトしました" 
-    redirect_to root_url
+    redirect_to root_url(logged_out: true)
   end 
   
   def login

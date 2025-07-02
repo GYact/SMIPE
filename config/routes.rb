@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # Chrome DevToolsの不要なリクエストを無視する
+  get '/.well-known/appspecific/com.chrome.devtools.json', to: ->(env) { [204, {}, []] }
+
   root 'static_pages#home'
   resources :locations, only: [:show, :update]
   
@@ -14,7 +17,19 @@ Rails.application.routes.draw do
   get '/player', to: 'player#show', as: 'player_page'
   get 'map', to: 'maps#index'
   get '/login', to: 'sessions#login', as: 'login'
+
+  # modelsブランチのルート
   post 'save_playlist', to: 'player#save_playlist'
   post 'playlists/save', to: 'playlists#save'
   get 'playlist_locations', to: 'player#locations'
+
+  # mainブランチのルート
+  get 'playlists', to: 'playlists#index'
+  get 'playlists/:id/tracks', to: 'playlists#tracks'
+  patch 'player/update_selected_playlist', to: 'player#update_selected_playlist'
+  resources :playlists, only: [:index] do
+    member do
+      get :tracks
+    end
+  end
 end

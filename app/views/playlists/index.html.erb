@@ -1,0 +1,241 @@
+<div class="playlists-header">
+  Your Playlists
+</div>
+
+<div class="playlists-container">
+  <% if @smipe_playlist %>
+    <div class="playlist-section">
+      <div class="playlist-card">
+        <% if @smipe_playlist.images.any? %>
+          <%= image_tag @smipe_playlist.images.first['url'], alt: "Playlist Cover", class: "playlist-cover" %>
+        <% else %>
+          <%= image_tag "default_playlist.png", alt: "Default Cover", class: "playlist-cover" %>
+        <% end %>
+        <div class="playlist-info">
+          <h3><%= @smipe_playlist.name %></h3>
+          <p><%= @smipe_playlist.tracks.count %> tracks</p>
+          <p class="playlist-description"><%= @smipe_playlist.description %></p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="playlist-section">
+    <div class="playlists-grid">
+      <% @playlists.each do |playlist| %>
+        <div class="playlist-card" data-playlist-id="<%= playlist.id %>">
+          <div class="playlist-image-container">
+            <img src="<%= playlist.images.first&.dig('url') || 'default_playlist_image.jpg' %>" 
+                 alt="<%= playlist.name %>" 
+                 class="playlist-image">
+          </div>
+          <div class="playlist-info">
+            <h3 class="playlist-name"><%= playlist.name %></h3>
+            <p class="playlist-owner">by <%= playlist.owner.display_name %></p>
+            <p class="playlist-tracks"><%= playlist.tracks.size %> tracks</p>
+          </div>
+          <div class="playlist-tracks-list" style="display: none;">
+            <div class="tracks-loading">Loading tracks...</div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<style>
+.playlists-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 96px; /* ヘッダー高さ+余白 */
+  margin-bottom: 32px;
+  z-index: 10;
+  position: relative;
+  background: transparent;
+  box-sizing: border-box;
+}
+.playlists-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  margin-top: 0;
+}
+
+.playlist-section {
+  margin-bottom: 40px;
+}
+
+.playlist-section h2 {
+  color: #FFFFFF;
+  margin-bottom: 20px;
+}
+
+.playlists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.playlist-card {
+  background: #282828;
+  border-radius: 8px;
+  padding: 16px;
+  transition: background-color 0.3s;
+  cursor: pointer;
+}
+
+.playlist-card:hover {
+  background: #383838;
+}
+
+.playlist-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.playlist-info h3 {
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.playlist-info p {
+  color: #B3B3B3;
+  margin: 0;
+  font-size: 14px;
+}
+
+.playlist-description {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #B3B3B3;
+}
+
+.playlist-tracks-list {
+  margin-top: 16px;
+  padding: 16px;
+  background: #181818;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.track-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #282828;
+}
+
+.track-item:last-child {
+  border-bottom: none;
+}
+
+.track-info {
+  flex: 1;
+}
+
+.track-name {
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.track-artist {
+  color: #B3B3B3;
+  font-size: 12px;
+}
+
+.tracks-loading {
+  color: #B3B3B3;
+  text-align: center;
+  padding: 20px;
+}
+
+.track-error {
+  color: #ff4444;
+  text-align: center;
+  padding: 20px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const playlistCards = document.querySelectorAll('.playlist-card');
+  
+  playlistCards.forEach(card => {
+    card.addEventListener('click', async function() {
+      const playlistId = this.dataset.playlistId;
+      const tracksList = this.querySelector('.playlist-tracks-list');
+      
+      console.log('Playlist card clicked:', playlistId);
+      
+      // 既に開いている場合は閉じる
+      if (tracksList.style.display === 'block') {
+        tracksList.style.display = 'none';
+        console.log('Closing tracks list');
+        return;
+      }
+      
+      // 他の開いているプレイリストを閉じる
+      document.querySelectorAll('.playlist-tracks-list').forEach(list => {
+        if (list !== tracksList) {
+          list.style.display = 'none';
+        }
+      });
+      
+      // トラックリストを表示
+      tracksList.style.display = 'block';
+      console.log('Opening tracks list for playlist:', playlistId);
+      
+      try {
+        console.log('Fetching tracks from:', `/playlists/${playlistId}/tracks`);
+        const response = await fetch(`/playlists/${playlistId}/tracks`, {
+          headers: {
+            'Accept': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          }
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (response.ok) {
+          const tracks = await response.json();
+          console.log('Tracks received:', tracks);
+          
+          if (tracks.error) {
+            throw new Error(tracks.error);
+          }
+          
+          tracksList.innerHTML = tracks.map(track => `
+            <div class="track-item">
+              <div class="track-info">
+                <div class="track-name">${track.name}</div>
+                <div class="track-artist">${track.artists.join(', ')}</div>
+              </div>
+            </div>
+          `).join('');
+          
+          console.log('Tracks list updated successfully');
+        } else {
+          const errorData = await response.json();
+          console.error('Server error:', errorData);
+          throw new Error(errorData.error || 'Failed to load tracks');
+        }
+      } catch (error) {
+        console.error('Error loading tracks:', error);
+        tracksList.innerHTML = `<div class="track-error">${error.message || 'Error loading tracks'}</div>`;
+      }
+    });
+  });
+});
+</script>
