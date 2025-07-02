@@ -11,6 +11,6 @@ pin "leaflet", to: "https://ga.jspm.io/npm:leaflet@1.9.4/dist/leaflet-src.js"
 
 # Application controllers
 pin_all_from "app/javascript/controllers", under: "controllers"
-pin "spotify_player", to: "spotify_player.js"
+
 pin "toastr", to: "https://ga.jspm.io/npm:toastr@2.1.4/toastr.js"
 pin "jquery", to: "https://ga.jspm.io/npm:jquery@3.7.1/dist/jquery.js"

@@ -1,7 +1,17 @@
 class PlaylistsController < ApplicationController
   def index
     if session[:spotify_user_data]
-      @spotify_user = RSpotify::User.new(session[:spotify_user_data])
+      auth_data = session[:spotify_user_data]
+      @spotify_user = RSpotify::User.new(auth_data)
+
+      # RSpotifyの認証情報を更新
+      # これにより、API呼び出しが正しく認証される
+      if auth_data['credentials'] && auth_data['credentials']['token']
+        RSpotify.authenticate(ENV['SPOTIFY_CLIENT_ID'], ENV['SPOTIFY_CLIENT_SECRET'])
+        # credentials = auth_data['credentials']
+        # RSpotify.authenticate(credentials['token'], credentials['refresh_token'])
+      end
+
       @playlists = @spotify_user.playlists
     else
       redirect_to root_path, alert: 'Please login with Spotify first'

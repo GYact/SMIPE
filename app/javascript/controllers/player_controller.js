@@ -1,8 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"]
-  static values = { playing: Boolean }
+  static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel",
+                    "playPauseButton", "shuffleButton", "skipButton", "likeButton",
+                    "togglePlaylistSelectionButton", "playlistSelectionPanel", "selectedPlaylistRadios",
+                    "songTitle", "artistName", "upNextItems"]
+  static values = { playing: Boolean, token: String, trackUris: Array, selectedPlaylistId: String,
+                     currentIndex: Number, isLiked: Boolean, isShuffled: Boolean, previousTracks: Array }
 
   connect() {
     console.log('Player controller connected');
@@ -11,12 +15,72 @@ export default class extends Controller {
     this.isDragging = false
     this.dragDirection = null // 'horizontal' or 'vertical'
     this.setupTouchEvents()
+
+    // 初期データの取得
+    this.tokenValue = this.element.dataset.playerToken;
+    this.trackUrisValue = JSON.parse(this.element.dataset.playerTrackUris || '[]');
+    this.selectedPlaylistIdValue = this.element.dataset.playerSelectedPlaylistId;
+    this.currentIndexValue = 0;
+    this.isLikedValue = false;
+    this.isShuffledValue = false;
+    this.previousTracksValue = [];
+
+    this.playerStateChanged = this.playerStateChanged.bind(this);
+    if (window.spotifyPlayer) {
+      window.spotifyPlayer.addListener('player_state_changed', this.playerStateChanged);
+      this.makePlayable();
+    } else {
+      document.addEventListener('spotifyPlayerReady', () => {
+        window.spotifyPlayer.addListener('player_state_changed', this.playerStateChanged);
+        this.makePlayable();
+      }, { once: true });
+    }
+  }
+
+  makePlayable() {
+    console.log('makePlayable called');
+    this.playPauseButtonTarget.disabled = false;
+    console.log('Play button disabled status:', this.playPauseButtonTarget.disabled);
+    // 初期トラックの表示と再生
+    if (this.trackUrisValue.length > 0) {
+      this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
+      this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
+      this.updateUpNextDisplay();
+      this.playCurrentTrack(); // コメントアウトを解除
+    }
+  }
+
+  toggleShuffle() {
+    this.isShuffledValue = !this.isShuffledValue;
+    if (this.isShuffledValue) {
+      this.trackUrisValue = this.shuffleArray([...this.trackUrisValue]);
+      this.currentIndexValue = 0; // シャッフルしたら最初の曲から
+      this.playCurrentTrack();
+      this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
+      this.updateUpNextDisplay();
+      this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
+      this.shuffleButtonTarget.style.color = '#1DB954';
+    } else {
+      // シャッフル解除時の処理（元の順序に戻す場合は別途ロジックが必要）
+      // 現状はシャッフルされたままの順序で再生を続ける
+      this.shuffleButtonTarget.style.color = '#B3B3B3';
+    }
+  }
+
+  disconnect() {
+    if (window.spotifyPlayer && this.playerStateChanged) {
+      window.spotifyPlayer.removeListener('player_state_changed', this.playerStateChanged);
+    }
   }
 
   togglePlay() {
-    this.playingValue = !this.playingValue;
-    // ここに実際の再生/停止API呼び出しロジックを追加します
-    // 例: this.player.togglePlay();
+    if (window.spotifyPlayer) {
+      window.spotifyPlayer.togglePlay().catch(err => {
+        console.error('Playback toggle failed', err);
+      });
+    } else {
+      console.error('Spotify Player is not available.');
+    }
   }
 
   playingValueChanged() {
@@ -197,23 +261,19 @@ export default class extends Controller {
       switch (dominantDirection) {
         case 'right':
           console.log('Swipe right - Add to library');
-          const rightEvent = new CustomEvent('swipeRight', { bubbles: true });
-          this.element.dispatchEvent(rightEvent);
+          this.handleSwipeRight();
           break;
         case 'left':
           console.log('Swipe left - Remove from library');
-          const leftEvent = new CustomEvent('swipeLeft', { bubbles: true });
-          this.element.dispatchEvent(leftEvent);
+          this.handleSwipeLeft();
           break;
         case 'down':
           console.log('Swipe down - Previous track');
-          const downEvent = new CustomEvent('swipeDown', { bubbles: true });
-          this.element.dispatchEvent(downEvent);
+          this.handleSwipeDown();
           break;
         case 'up':
           console.log('Swipe up - Next track');
-          const upEvent = new CustomEvent('swipeUp', { bubbles: true });
-          this.element.dispatchEvent(upEvent);
+          this.handleSwipeUp();
           break;
       }
     } else {
@@ -222,5 +282,419 @@ export default class extends Controller {
 
     this.isDragging = false;
     this.dragDirection = null;
+  }
+
+  handleSwipeRight() {
+    const trackUri = this.trackUrisValue[this.currentIndexValue];
+    this.addToPlaylist(trackUri);
+  }
+
+  handleSwipeLeft() {
+    const trackUri = this.trackUrisValue[this.currentIndexValue];
+    this.removeFromPlaylist(trackUri);
+  }
+
+  handleSwipeUp() {
+    this.handleNext();
+  }
+
+  handleSwipeDown() {
+    this.handlePrevious();
+  }
+
+  playerStateChanged(state) {
+    if (state) {
+      this.playingValue = !state.paused;
+    }
+  }
+
+  // Helper to wait for device ID
+  async getDeviceId() {
+    return new Promise(resolve => {
+      if (window.spotifyDeviceId) {
+        resolve(window.spotifyDeviceId);
+      } else {
+        document.addEventListener('spotifyPlayerReady', () => {
+          resolve(window.spotifyDeviceId);
+        }, { once: true });
+      }
+    });
+  }
+
+  // Play the current track
+  async playCurrentTrack() {
+    const deviceId = await this.getDeviceId();
+    if (!deviceId) {
+      console.error('Device ID not ready');
+      alert('プレイヤーの準備ができていません。少し待ってから再試行してください。');
+      return;
+    }
+
+    const currentTrackUri = this.trackUrisValue[this.currentIndexValue];
+    if (!currentTrackUri) return;
+
+    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.tokenValue}`
+      },
+      body: JSON.stringify({
+        uris: [currentTrackUri]
+      })
+    }).then(() => {
+      console.log(`Now playing: ${currentTrackUri}`);
+    }).catch(err => {
+      console.error('Playback start error:', err);
+    });
+  }
+
+  updateCurrentTrackDisplay(trackUri) {
+    const trackId = trackUri.split(':').pop();
+
+    fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.tokenValue}`
+      }
+    })
+    .then(response => response.json())
+    .then(trackData => {
+      this.albumImageTarget.src = trackData.album.images[0]?.url || '';
+      this.albumImageTarget.alt = trackData.name;
+
+      this.songTitleTarget.innerText = trackData.name;
+      this.artistNameTarget.innerText = trackData.artists.map(a => a.name).join(', ');
+    })
+    .catch(err => console.error('Error updating current track display:', err));
+  }
+
+  async checkIfTrackIsLiked(trackUri) {
+    const trackId = trackUri.split(':').pop();
+    try {
+      const response = await fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`
+        }
+      });
+      const results = await response.json();
+      this.isLikedValue = results[0];
+      this.updateLikeButtonUI();
+    } catch (err) {
+      console.error('Error checking if track is liked:', err);
+    }
+  }
+
+  updateLikeButtonUI() {
+    if (this.hasLikeButtonTarget) {
+      if (this.isLikedValue) {
+        this.likeButtonTarget.classList.add('liked');
+        this.likeButtonTarget.style.color = '#1DB954';
+      } else {
+        this.likeButtonTarget.classList.remove('liked');
+        this.likeButtonTarget.style.color = '#B3B3B3';
+      }
+    }
+  }
+
+  handleSkip() {
+    console.log('Skip button clicked');
+    this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
+    this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
+    console.log(`Skipping to track index ${this.currentIndexValue}`);
+    this.playCurrentTrack();
+    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
+    this.updateUpNextDisplay();
+    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
+    if (this.hasSkipButtonTarget) {
+      this.skipButtonTarget.style.color = '#1DB954';
+      setTimeout(() => {
+        this.skipButtonTarget.style.color = '#B3B3B3';
+      }, 500);
+    }
+  }
+
+  handleNext() {
+    console.log('Next track (swipe up)');
+    this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
+    this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
+    console.log(`Moving to next track index ${this.currentIndexValue}`);
+    this.playCurrentTrack();
+    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
+    this.updateUpNextDisplay();
+    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
+  }
+
+  handlePrevious() {
+    console.log('Previous track (swipe down)');
+    if (this.previousTracksValue.length > 0) {
+      this.currentIndexValue = this.previousTracksValue.pop();
+      console.log(`Moving to previous track index ${this.currentIndexValue}`);
+    } else {
+      // 履歴がない場合は最後の曲に移動
+      this.currentIndexValue = (this.currentIndexValue - 1 + this.trackUrisValue.length) % this.trackUrisValue.length;
+      console.log(`Moving to last track index ${this.currentIndexValue}`);
+    }
+    this.playCurrentTrack();
+    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
+    this.updateUpNextDisplay();
+    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
+  }
+
+  async updateUpNextDisplay() {
+    if (!this.hasUpNextItemsTarget) return;
+    this.upNextItemsTarget.innerHTML = '';
+
+    for (let i = 1; i <= 3; i++) {
+      const nextIndex = (this.currentIndexValue + i) % this.trackUrisValue.length;
+      const trackUri = this.trackUrisValue[nextIndex];
+      const trackId = trackUri.split(':').pop();
+
+      try {
+        const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+          headers: {
+            'Authorization': `Bearer ${this.tokenValue}`
+          }
+        });
+        const trackData = await response.json();
+
+        const itemDiv = document.createElement('div');
+        itemDiv.classList.add('up-next-item');
+        itemDiv.style.cursor = 'pointer';
+        itemDiv.style.display = 'flex';
+        itemDiv.style.alignItems = 'center';
+        itemDiv.style.padding = '10px';
+        itemDiv.style.borderRadius = '8px';
+        itemDiv.style.transition = 'background-color 0.2s';
+        
+        itemDiv.addEventListener('mouseover', () => {
+          itemDiv.style.backgroundColor = '#282828';
+        });
+        
+        itemDiv.addEventListener('mouseout', () => {
+          itemDiv.style.backgroundColor = 'transparent';
+        });
+        
+        itemDiv.addEventListener('click', () => {
+          this.currentIndexValue = nextIndex;
+          this.playCurrentTrack();
+          this.updateCurrentTrackDisplay(trackUri);
+          this.updateUpNextDisplay();
+          this.checkIfTrackIsLiked(trackUri);
+        });
+        
+        const img = document.createElement('img');
+        img.src = trackData.album.images[0]?.url || '';
+        img.alt = 'Album Art';
+        img.style.width = '60px';
+        img.style.height = '60px';
+        img.style.borderRadius = '4px';
+        img.style.marginRight = '15px';
+
+        const textDiv = document.createElement('div');
+        textDiv.style.flex = '1';
+
+        const title = document.createElement('p');
+        title.innerText = trackData.name;
+        title.style.margin = '0';
+        title.style.fontWeight = 'bold';
+
+        const artist = document.createElement('p');
+        artist.innerText = trackData.artists.map(a => a.name).join(', ');
+        artist.style.margin = '0';
+        artist.style.color = '#B3B3B3';
+        artist.style.fontSize = '0.9em';
+
+        textDiv.appendChild(title);
+        textDiv.appendChild(artist);
+
+        itemDiv.appendChild(img);
+        itemDiv.appendChild(textDiv);
+
+        this.upNextItemsTarget.appendChild(itemDiv);
+      } catch (err) {
+        console.error('Error updating up next display:', err);
+      }
+    }
+  }
+
+  shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  handleLike(isAdd) {
+    console.log(`Like button clicked: ${isAdd ? 'Add' : 'Remove'}`);
+    this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
+    this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
+    console.log(`Skipping to track index ${this.currentIndexValue}`);
+    this.playCurrentTrack();
+    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
+    this.updateUpNextDisplay();
+    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
+    this.updateLikeButtonUI(); // UI更新はcheckIfTrackIsLiked内で呼ばれるので不要だが、念のため
+  }
+
+  async addToPlaylist(trackUri) {
+    try {
+      const selectedPlaylist = this.selectedPlaylistRadiosTarget.querySelector('input[name="selected_playlist"]:checked');
+      if (!selectedPlaylist) {
+        console.error('No playlist selected');
+        return;
+      }
+
+      const playlistId = selectedPlaylist.value;
+      const playlistName = selectedPlaylist.dataset.playlistName;
+
+      // プレイリストの所有者権限を確認
+      const playlistResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`
+        }
+      });
+
+      if (!playlistResponse.ok) {
+        throw new Error('Failed to access playlist');
+      }
+
+      const playlistData = await playlistResponse.json();
+      
+      // プレイリストが自分のものか確認
+      // より厳密にはサーバーサイドでチェックすべき
+
+      const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          uris: [trackUri]
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        // 重複曲の場合はエラーメッセージを表示しない
+        if (errorData.error?.message?.includes('already exists')) {
+          console.log('Track already exists in playlist');
+          this.handleSkip();
+          return;
+        }
+        throw new Error(errorData.error?.message || 'Failed to add track to playlist');
+      }
+
+      console.log(`Added track to playlist: ${playlistName}`);
+      this.handleSkip();
+    } catch (error) {
+      console.error('Error adding track to playlist:', error);
+      // 重複曲以外のエラーの場合のみアラートを表示
+      if (!error.message?.includes('already exists')) {
+        alert('プレイリストへの曲の追加に失敗しました。');
+      }
+    }
+  }
+
+  async removeFromPlaylist(trackUri) {
+    try {
+      const selectedPlaylist = this.selectedPlaylistRadiosTarget.querySelector('input[name="selected_playlist"]:checked');
+      if (!selectedPlaylist) {
+        console.error('No playlist selected');
+        return;
+      }
+
+      const playlistId = selectedPlaylist.value;
+      const playlistName = selectedPlaylist.dataset.playlistName;
+
+      // プレイリストの所有者権限を確認
+      // Note: @spotify_user.id はRails側でしか取得できないため、ここでは簡易的にチェック
+      // より厳密にはサーバーサイドでチェックすべき
+      // if (playlistData.owner.id !== '<%= @spotify_user.id %>') {
+      //   console.error('Cannot modify playlist: Not the owner');
+      //   alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
+      //   return;
+      // }
+
+      const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tracks: [{ uri: trackUri }]
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Failed to remove track from playlist');
+      }
+
+      console.log(`Removed track from playlist: ${playlistName}`);
+      this.handleSkip();
+    } catch (error) {
+      console.error('Error removing track from playlist:', error);
+      alert('プレイリストからの曲の削除に失敗しました。');
+    }
+  }
+
+  togglePlaylistSelection() {
+    if (this.hasPlaylistSelectionPanelTarget) {
+      const panel = this.playlistSelectionPanelTarget;
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  async handlePlaylistSelectionChange(event) {
+    const selectedPlaylist = event.target;
+    if (selectedPlaylist.checked) {
+      const playlistId = selectedPlaylist.value;
+      const playlistName = selectedPlaylist.dataset.playlistName;
+      
+      try {
+        // プレイリストの所有者権限を確認 (クライアントサイドでは簡易的なチェック)
+        const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+          headers: {
+            'Authorization': `Bearer ${this.tokenValue}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to access playlist');
+        }
+
+        const playlistData = await response.json();
+        
+        // Note: @spotify_user.id はRails側でしか取得できないため、ここでは簡易的にチェック
+        // より厳密にはサーバーサイドでチェックすべき
+        // if (playlistData.owner.id !== '<%= @spotify_user.id %>') {
+        //   alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
+        //   const previousSelection = this.selectedPlaylistRadiosTarget.querySelector('input[name="selected_playlist"][checked]');
+        //   if (previousSelection) {
+        //     previousSelection.checked = true;
+        //   }
+        //   return;
+        // }
+
+        // 選択をサーバーに保存
+        await fetch('/player/update_selected_playlist', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          },
+          body: JSON.stringify({ playlist_id: playlistId })
+        });
+
+        console.log(`Selected playlist: ${playlistName} (${playlistId})`);
+        this.selectedPlaylistIdValue = playlistId; // Stimulus valueを更新
+      } catch (error) {
+        console.error('Error selecting playlist:', error);
+        alert('プレイリストの選択に失敗しました。');
+      }
+    }
   }
 } 

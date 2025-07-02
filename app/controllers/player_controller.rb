@@ -3,8 +3,24 @@ class PlayerController < ApplicationController
 
   def show
     if session[:spotify_user_data]
-      @spotify_user = RSpotify::User.new(session[:spotify_user_data])
-      @playlists = @spotify_user.playlists
+      auth_data = session[:spotify_user_data]
+      begin
+        @spotify_user = RSpotify::User.new(auth_data)
+
+        # 最初にAPIを呼び出してトークンをリフレッシュさせる
+        @playlists = @spotify_user.playlists
+
+        # リフレッシュ後の新しいアクセストークンを取得
+        @access_token = @spotify_user.credentials['token']
+        session[:spotify_user_data]['credentials']['token'] = @access_token
+
+      rescue RestClient::BadRequest
+        # トークンのリフレッシュに失敗した場合、再ログインを促す
+        log_out
+        session.delete(:spotify_user_data)
+        return redirect_to root_path, alert: 'Spotify session expired. Please login again.'
+      end
+
       @all_track_uris = []
       @playlists.each do |playlist|
         tracks = playlist.tracks

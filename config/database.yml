@@ -38,3 +38,6 @@ production:
   cable:
     <<: *default
     database: /app/storage/cable.sqlite3
+  queue:
+    <<: *default
+    database: /app/storage/queue.sqlite3
