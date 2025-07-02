@@ -1,0 +1,39 @@
+.playlist-marker-popup {
+  padding: 10px;
+  min-width: 200px;
+}
+
+.playlist-marker-popup h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.playlist-marker-popup p {
+  margin: 5px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+/* マーカーのアイコンをカスタマイズ */
+.leaflet-marker-icon {
+  background-color: #1DB954;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* マーカーのポップアップのスタイル */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.leaflet-popup-content {
+  margin: 10px;
+}
+
+.leaflet-popup-tip {
+  background: #fff;
+} 
