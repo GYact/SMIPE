@@ -1,4 +1,3 @@
-// app/javascript/controllers/map_controller.js
 import { Controller } from "@hotwired/stimulus"
 import L from "leaflet"
 
@@ -17,7 +16,6 @@ export default class extends Controller {
   }
 
   initMap() {
-    // マップ表示先はmap-wrapper内のmap要素
     const mapElement = this.element.querySelector('#map');
     this.map = L.map(mapElement).setView([35.681236, 139.767125], 13);
 
@@ -25,7 +23,6 @@ export default class extends Controller {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(this.map);
 
-    // マーカーを保持する配列
     this.playlistMarkers = [];
   }
 
@@ -54,18 +51,12 @@ export default class extends Controller {
         const longitude = position.coords.longitude;
         const accuracy = position.coords.accuracy;
 
-        // 位置情報表示を更新
         this.updateLocationDisplay(latitude, longitude, accuracy);
-
-        // 位置情報をサーバーへ送信
         this.sendLocationToServer(latitude, longitude);
 
-        // 地図の中心を取得位置に移動し、マーカー表示
         this.map.setView([latitude, longitude], 15);
 
-        if (this.marker) {
-          this.map.removeLayer(this.marker);
-        }
+        if (this.marker) this.map.removeLayer(this.marker);
 
         this.marker = L.marker([latitude, longitude]).addTo(this.map)
           .bindPopup(`
@@ -76,7 +67,6 @@ export default class extends Controller {
             </div>
           `).openPopup();
 
-        // 位置情報をJavaScriptの値として更新
         this.userLocationValue = {
           latitude: latitude,
           longitude: longitude,
@@ -86,19 +76,13 @@ export default class extends Controller {
       (error) => {
         console.error("位置情報取得失敗:", error);
         let message = "位置情報を取得できませんでした";
-        
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            message = "位置情報のアクセスが拒否されました";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            message = "位置情報が利用できません";
-            break;
-          case error.TIMEOUT:
-            message = "位置情報の取得がタイムアウトしました";
-            break;
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED: message = "位置情報のアクセスが拒否されました"; break;
+          case error.POSITION_UNAVAILABLE: message = "位置情報が利用できません"; break;
+          case error.TIMEOUT: message = "位置情報の取得がタイムアウトしました"; break;
         }
-        
+
         this.showStatus(message, "error");
       },
       {
@@ -109,7 +93,6 @@ export default class extends Controller {
     );
   }
 
-  // 位置更新ボタンがクリックされた時のアクション
   updateLocation() {
     if (this.hasUpdateButtonTarget) {
       this.updateButtonTarget.disabled = true;
@@ -118,7 +101,6 @@ export default class extends Controller {
 
     this.requestLocation();
 
-    // ボタンを元に戻す
     setTimeout(() => {
       if (this.hasUpdateButtonTarget) {
         this.updateButtonTarget.disabled = false;
@@ -146,14 +128,11 @@ export default class extends Controller {
       body: JSON.stringify(locationData)
     })
     .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return response.json();
     })
     .then(data => {
       if (data.status === "success") {
-        console.log("位置情報が更新されました", data.location);
         this.showStatus("位置情報を更新しました", "success");
       } else {
         this.showStatus("更新に失敗しました: " + (data.errors?.join(", ") || "不明なエラー"), "error");
@@ -184,7 +163,7 @@ export default class extends Controller {
     if (this.hasStatusMessageTarget) {
       this.statusMessageTarget.textContent = message;
       this.statusMessageTarget.className = `status-message status-${type}`;
-      
+
       if (type === 'success') {
         setTimeout(() => {
           this.statusMessageTarget.textContent = '';
@@ -199,25 +178,18 @@ export default class extends Controller {
     return element && element.getAttribute("content");
   }
 
-  // 保存されたプレイリストの位置情報を取得して表示
   loadSavedPlaylists() {
     fetch('/playlist_locations')
       .then(response => response.json())
       .then(data => {
-        // 既存のマーカーをクリア
         this.clearPlaylistMarkers();
-        
-        // 新しいマーカーを追加
-        data.forEach(location => {
-          this.addPlaylistMarker(location);
-        });
+        data.forEach(location => this.addPlaylistMarker(location));
       })
       .catch(error => {
         console.error('プレイリスト位置情報の取得に失敗しました:', error);
       });
   }
 
-  // プレイリストのマーカーを追加
   addPlaylistMarker(location) {
     const userNickname = location.user_nickname || '不明なユーザー';
     const userImage = location.user_image || '';
@@ -237,7 +209,6 @@ export default class extends Controller {
     this.playlistMarkers.push(marker);
   }
 
-  // すべてのプレイリストマーカーをクリア
   clearPlaylistMarkers() {
     this.playlistMarkers.forEach(marker => {
       this.map.removeLayer(marker);
@@ -245,7 +216,6 @@ export default class extends Controller {
     this.playlistMarkers = [];
   }
 
-  // ✅ 選択されたプレイリストを保存する処理
   saveSelectedPlaylist() {
     const playlistSelect = document.getElementById('playlist-select');
     const selectedUri = playlistSelect.value;
@@ -258,36 +228,25 @@ export default class extends Controller {
     }
 
     if (!this.hasUserLocationValue) {
-      console.error("位置情報が不足しています");
       this.showStatus("位置情報が不足しています。位置を更新してください。", "error");
       return;
     }
 
     const location = this.userLocationValue;
 
-    // 位置情報の妥当性チェック
     if (!location.latitude || !location.longitude || 
         location.latitude === 0 || location.longitude === 0 ||
         isNaN(location.latitude) || isNaN(location.longitude)) {
-      console.error("位置情報が不正です:", location);
       this.showStatus("位置情報が正しく設定されていません。位置を更新してください。", "error");
       return;
     }
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const csrfToken = this.getMetaValue("csrf-token");
     if (!csrfToken) {
-      console.error("CSRFトークンが見つかりません");
       this.showStatus("セキュリティトークンが見つかりません。ページを再読み込みしてください。", "error");
       return;
     }
 
-    console.log("選択されたプレイリストを保存します:", {
-      name: selectedName,
-      uri: selectedUri,
-      location: location
-    });
-
-    // 保存ボタンを無効化
     const saveButton = document.querySelector('.save-playlist-button');
     if (saveButton) {
       saveButton.disabled = true;
@@ -309,39 +268,31 @@ export default class extends Controller {
         location_name: location.location_name
       })
     })
-      .then((res) => {
-        console.log("サーバーからのレスポンス:", res.status);
+      .then(res => {
         if (!res.ok) {
           return res.json().then(data => {
-            console.error("サーバーエラー:", data);
             throw new Error(data.message || "サーバーエラー");
           });
         }
         return res.json();
       })
-      .then((data) => {
-        console.log("保存結果:", data);
+      .then(data => {
         if (data.status === "success") {
           this.showStatus(`プレイリスト「${selectedName}」を保存しました`, "success");
-          // 保存成功後にマーカーを更新
           this.loadSavedPlaylists();
-          // セレクトボックスをリセット
           playlistSelect.value = "";
           if (saveButton) {
             saveButton.disabled = true;
             saveButton.textContent = '選択したプレイリストを保存';
           }
         } else {
-          console.error("保存失敗:", data);
           this.showStatus("プレイリストの保存に失敗しました", "error");
         }
       })
-      .catch((error) => {
-        console.error("エラーが発生しました:", error);
+      .catch(error => {
         this.showStatus(error.message || "通信に失敗しました", "error");
       })
       .finally(() => {
-        // 保存ボタンを元に戻す
         if (saveButton) {
           saveButton.disabled = false;
           saveButton.textContent = '選択したプレイリストを保存';

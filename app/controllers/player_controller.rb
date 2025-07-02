@@ -4,7 +4,6 @@ class PlayerController < ApplicationController
   def show
     if session[:spotify_user_data]
       begin
-        # RSpotifyが期待するデータ構造を再構築
         spotify_user_data = {
           'credentials' => {
             'token' => session[:spotify_user_data]['credentials']['token'],
@@ -15,7 +14,7 @@ class PlayerController < ApplicationController
           'id' => session[:spotify_user_data]['uid'],
           'info' => session[:spotify_user_data]['info']
         }
-        
+
         @spotify_user = RSpotify::User.new(spotify_user_data)
         @playlists = @spotify_user.playlists
         @all_track_uris = []
@@ -24,7 +23,6 @@ class PlayerController < ApplicationController
           @all_track_uris.concat(tracks.map(&:uri))
         end
 
-        # 選択されたプレイリストのIDを取得（セッションから、またはデフォルトとして最初のプレイリスト）
         @selected_playlist_id = session[:selected_playlist_id] || @playlists.first&.id
 
         first_playlist = @playlists.first
@@ -62,7 +60,6 @@ class PlayerController < ApplicationController
   def save
     if session[:spotify_user_data]
       begin
-        # RSpotifyが期待するデータ構造を再構築
         spotify_user_data = {
           'credentials' => {
             'token' => session[:spotify_user_data]['credentials']['token'],
@@ -73,7 +70,7 @@ class PlayerController < ApplicationController
           'id' => session[:spotify_user_data]['uid'],
           'info' => session[:spotify_user_data]['info']
         }
-        
+
         spotify_user = RSpotify::User.new(spotify_user_data)
         playlists = spotify_user.playlists
 
@@ -135,13 +132,13 @@ class PlayerController < ApplicationController
         longitude: longitude,
         location_name: location_name
       )
-      
+
       if playlist.save
         render json: { status: 'success', message: "プレイリスト「#{name}」を保存しました" }
       else
-        render json: { 
-          status: 'error', 
-          message: playlist.errors.full_messages.join(', ') 
+        render json: {
+          status: 'error',
+          message: playlist.errors.full_messages.join(', ')
         }, status: :unprocessable_entity
       end
     rescue => e
@@ -170,6 +167,8 @@ class PlayerController < ApplicationController
   private
 
   def require_login
-    render json: { error: 'ログインが必要です。' }, status: :unauthorized unless logged_in?
+    unless logged_in?
+      render json: { error: 'ログインが必要です。' }, status: :unauthorized
+    end
   end
 end

@@ -1,8 +1,8 @@
 class MapsController < ApplicationController
   before_action :require_login
-  
+
   def index
-    # ユーザーの位置情報を取得（0の場合はnullに設定）
+    # ユーザーの位置情報を取得（なければnilに設定）
     @user_location = if current_user.has_location?
       {
         latitude: current_user.latitude,
@@ -17,9 +17,10 @@ class MapsController < ApplicationController
       }
     end
 
+    # Spotifyプレイリストの取得
     if session[:spotify_user_data]
       begin
-        # RSpotifyが期待するデータ構造を再構築
+        # RSpotifyが期待する形式に変換してからユーザーを再生成
         spotify_user_data = {
           'credentials' => {
             'token' => session[:spotify_user_data]['credentials']['token'],
@@ -30,7 +31,7 @@ class MapsController < ApplicationController
           'id' => session[:spotify_user_data]['uid'],
           'info' => session[:spotify_user_data]['info']
         }
-        
+
         @spotify_user = RSpotify::User.new(spotify_user_data)
         @playlists = @spotify_user.playlists.map do |playlist|
           {
@@ -48,9 +49,9 @@ class MapsController < ApplicationController
       flash[:warning] = "Spotifyとの連携が必要です。"
     end
   end
-  
+
   private
-  
+
   def require_login
     redirect_to login_path unless logged_in?
   end
