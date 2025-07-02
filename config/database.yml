@@ -28,5 +28,5 @@ production:
   database: /app/storage/production.sqlite3
 
 cable:
-<<: *default
+  <<: *default
 database: /app/storage/cable.sqlite3
