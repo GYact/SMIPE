@@ -5,7 +5,9 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  align-items: center; /* 子要素を中央揃えにする */
   padding-top: 70px;
+  gap: 20px; /* 要素間のスペースを追加 */
 }
 
 .map-wrapper {
@@ -27,7 +29,8 @@
 }
 
 .location-info {
-  width: 350px;
+  width: 100%; /* 横幅を親要素に合わせる */
+  max-width: 600px; /* 最大幅を地図と合わせる */
   background-color: #181818;
   color: #FFFFFF;
   padding: 20px;
