@@ -14,30 +14,22 @@ class PlayerController < ApplicationController
         @access_token = @spotify_user.credentials['token']
         session[:spotify_user_data]['credentials']['token'] = @access_token
 
-      rescue RestClient::BadRequest
-        # トークンのリフレッシュに失敗した場合、再ログインを促す
-        log_out
-        session.delete(:spotify_user_data)
-        return redirect_to root_path, alert: 'Spotify session expired. Please login again.'
-      end
-
-      @all_track_uris = []
-      @playlists.each do |playlist|
-        tracks = playlist.tracks
-        @all_track_uris.concat(tracks.map(&:uri))
-      end
+        @all_track_uris = []
+        @playlists.each do |playlist|
+          tracks = playlist.tracks
+          @all_track_uris.concat(tracks.map(&:uri))
+        end
 
         @selected_playlist_id = session[:selected_playlist_id] || @playlists.first&.id
 
-      first_playlist = @playlists.first
-      if first_playlist && first_playlist.tracks.any?
-        @first_track = first_playlist.tracks.first
-        @first_track_uri = @first_track.uri
-      else
-        @first_track = nil
-        @first_track_uri = nil
-      end
-      # @access_token = session[:spotify_user_data]["credentials"]["token"] # この行は重複するので削除
+        first_playlist = @playlists.first
+        if first_playlist && first_playlist.tracks.any?
+          @first_track = first_playlist.tracks.first
+          @first_track_uri = @first_track.uri
+        else
+          @first_track = nil
+          @first_track_uri = nil
+        end
 
         @user_location = current_user.has_location? ? {
           latitude: current_user.latitude,
@@ -46,6 +38,12 @@ class PlayerController < ApplicationController
           last_updated: current_user.last_location_update,
           is_stale: current_user.location_stale?
         } : nil
+
+      rescue RestClient::BadRequest
+        # トークンのリフレッシュに失敗した場合、再ログインを促す
+        log_out
+        session.delete(:spotify_user_data)
+        return redirect_to root_path, alert: 'Spotify session expired. Please login again.'
       rescue => e
         Rails.logger.error "RSpotify error: #{e.message}"
         log_out
