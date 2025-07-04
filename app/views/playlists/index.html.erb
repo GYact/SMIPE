@@ -2,7 +2,7 @@
   Your Playlists
 </div>
 
-<div class="playlists-container">
+<div class="playlists-container" data-controller="playlists">
   <% if @smipe_playlist %>
     <div class="playlist-section">
       <div class="playlist-card">
@@ -23,7 +23,7 @@
   <div class="playlist-section">
     <div class="playlists-grid">
       <% @playlists.each do |playlist| %>
-        <div class="playlist-card" data-playlist-id="<%= playlist.id %>">
+        <div class="playlist-card" data-action="click->playlists#toggleTracks" data-playlists-playlist-id-value="<%= playlist.id %>">
           <div class="playlist-image-container">
             <img src="<%= playlist.images.first&.dig('url') || 'default_playlist_image.jpg' %>" 
                  alt="<%= playlist.name %>" 
@@ -34,7 +34,7 @@
             <p class="playlist-owner">by <%= playlist.owner.display_name %></p>
             <p class="playlist-tracks"><%= playlist.tracks.size %> tracks</p>
           </div>
-          <div class="playlist-tracks-list" style="display: none;">
+          <div class="playlist-tracks-list" style="display: none;" data-playlists-target="tracksList">
             <div class="tracks-loading">Loading tracks...</div>
           </div>
         </div>
@@ -168,74 +168,3 @@
 }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const playlistCards = document.querySelectorAll('.playlist-card');
-  
-  playlistCards.forEach(card => {
-    card.addEventListener('click', async function() {
-      const playlistId = this.dataset.playlistId;
-      const tracksList = this.querySelector('.playlist-tracks-list');
-      
-      console.log('Playlist card clicked:', playlistId);
-      
-      // 既に開いている場合は閉じる
-      if (tracksList.style.display === 'block') {
-        tracksList.style.display = 'none';
-        console.log('Closing tracks list');
-        return;
-      }
-      
-      // 他の開いているプレイリストを閉じる
-      document.querySelectorAll('.playlist-tracks-list').forEach(list => {
-        if (list !== tracksList) {
-          list.style.display = 'none';
-        }
-      });
-      
-      // トラックリストを表示
-      tracksList.style.display = 'block';
-      console.log('Opening tracks list for playlist:', playlistId);
-      
-      try {
-        console.log('Fetching tracks from:', `/playlists/${playlistId}/tracks`);
-        const response = await fetch(`/playlists/${playlistId}/tracks`, {
-          headers: {
-            'Accept': 'application/json',
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-          }
-        });
-        
-        console.log('Response status:', response.status);
-        
-        if (response.ok) {
-          const tracks = await response.json();
-          console.log('Tracks received:', tracks);
-          
-          if (tracks.error) {
-            throw new Error(tracks.error);
-          }
-          
-          tracksList.innerHTML = tracks.map(track => `
-            <div class="track-item">
-              <div class="track-info">
-                <div class="track-name">${track.name}</div>
-                <div class="track-artist">${track.artists.join(', ')}</div>
-              </div>
-            </div>
-          `).join('');
-          
-          console.log('Tracks list updated successfully');
-        } else {
-          const errorData = await response.json();
-          console.error('Server error:', errorData);
-          throw new Error(errorData.error || 'Failed to load tracks');
-        }
-      } catch (error) {
-        console.error('Error loading tracks:', error);
-        tracksList.innerHTML = `<div class="track-error">${error.message || 'Error loading tracks'}</div>`;
-      }
-    });
-  });
-});
-</script>
