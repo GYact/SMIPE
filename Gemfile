@@ -3,6 +3,7 @@ source "https://rubygems.org"
 gem "dotenv-rails"
 gem "omniauth"
 gem "omniauth-spotify"
+gem "omniauth-rails_csrf_protection"
 gem "rspotify"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"

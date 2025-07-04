@@ -3,20 +3,17 @@ class PlayerController < ApplicationController
 
   def show
     if session[:spotify_user_data]
+      auth_data = session[:spotify_user_data]
       begin
-        spotify_user_data = {
-          'credentials' => {
-            'token' => session[:spotify_user_data]['credentials']['token'],
-            'refresh_token' => session[:spotify_user_data]['credentials']['refresh_token'],
-            'expires' => session[:spotify_user_data]['credentials']['expires'],
-            'expires_at' => session[:spotify_user_data]['credentials']['expires_at']
-          },
-          'id' => session[:spotify_user_data]['uid'],
-          'info' => session[:spotify_user_data]['info']
-        }
+        @spotify_user = RSpotify::User.new(auth_data)
 
-        @spotify_user = RSpotify::User.new(spotify_user_data)
+        # 最初にAPIを呼び出してトークンをリフレッシュさせる
         @playlists = @spotify_user.playlists
+
+        # リフレッシュ後の新しいアクセストークンを取得
+        @access_token = @spotify_user.credentials['token']
+        session[:spotify_user_data]['credentials']['token'] = @access_token
+
         @all_track_uris = []
         @playlists.each do |playlist|
           tracks = playlist.tracks
@@ -33,7 +30,6 @@ class PlayerController < ApplicationController
           @first_track = nil
           @first_track_uri = nil
         end
-        @access_token = session[:spotify_user_data]["credentials"]["token"]
 
         @user_location = current_user.has_location? ? {
           latitude: current_user.latitude,
@@ -42,6 +38,12 @@ class PlayerController < ApplicationController
           last_updated: current_user.last_location_update,
           is_stale: current_user.location_stale?
         } : nil
+
+      rescue RestClient::BadRequest
+        # トークンのリフレッシュに失敗した場合、再ログインを促す
+        log_out
+        session.delete(:spotify_user_data)
+        return redirect_to root_path, alert: 'Spotify session expired. Please login again.'
       rescue => e
         Rails.logger.error "RSpotify error: #{e.message}"
         log_out
