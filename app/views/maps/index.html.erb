@@ -14,8 +14,10 @@
       <% if @user_location && @user_location[:latitude] != 0 && @user_location[:longitude] != 0 %>
         <div class="coordinates">
           <strong>保存された位置:</strong><br>
-          緯度: <%= @user_location[:latitude].round(4) %><br>
-          経度: <%= @user_location[:longitude].round(4) %>
+          <% if @user_location[:latitude] && @user_location[:longitude] %>
+            緯度: <%= @user_location[:latitude].round(4) %><br>
+            経度: <%= @user_location[:longitude].round(4) %>
+          <% end %>
         </div>
       <% else %>
         <div class="loading">
