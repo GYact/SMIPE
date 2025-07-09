@@ -8,12 +8,9 @@ export default class extends Controller {
     const playlistId = card.dataset.playlistsPlaylistIdValue; // クリックされたカードから直接IDを取得
     const tracksList = card.querySelector('[data-playlists-target="tracksList"]');
 
-    console.log('Playlist card clicked:', playlistId);
-
     // 既に開いている場合は閉じる
     if (tracksList.style.display === 'block') {
       tracksList.style.display = 'none';
-      console.log('Closing tracks list');
       return;
     }
 
@@ -26,7 +23,6 @@ export default class extends Controller {
 
     // トラックリストを表示
     tracksList.style.display = 'block';
-    console.log('Opening tracks list for playlist:', playlistId);
 
     try {
       const tokenMeta = document.querySelector('meta[name="spotify-token"]');
@@ -38,7 +34,6 @@ export default class extends Controller {
         return;
       }
 
-      console.log('Fetching tracks from:', `/playlists/${playlistId}/tracks`);
       // プレイリストが自分のものか確認
       // より厳密にはサーバーサイドでチェックすべき
 
@@ -50,11 +45,8 @@ export default class extends Controller {
         }
       });
 
-      console.log('Response status:', response.status);
-
       if (response.ok) {
         const tracks = await response.json();
-        console.log('Tracks received:', tracks);
 
         if (tracks.error) {
           throw new Error(tracks.error);
@@ -69,7 +61,6 @@ export default class extends Controller {
           </div>
         `).join('');
 
-        console.log('Tracks list updated successfully');
       } else {
         const errorData = await response.json();
         console.error('Server error:', errorData);
