@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_09_045343) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_09_053000) do
   create_table "artists", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
@@ -70,6 +70,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_09_045343) do
     t.decimal "longitude"
     t.string "location_name"
     t.datetime "last_location_update"
+    t.string "access_token"
+    t.string "refresh_token"
+    t.datetime "expires_at"
   end
 
   add_foreign_key "playlist_locations", "users"
