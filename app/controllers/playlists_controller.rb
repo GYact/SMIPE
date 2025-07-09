@@ -1,7 +1,7 @@
 class PlaylistsController < ApplicationController
   def index
     if session[:spotify_user_data]
-      @spotify_user = RSpotify::User.new(session[:spotify_user_data])
+      @spotify_user = RSpotify::User.new('credentials' => session[:spotify_credentials])
       @playlists = @spotify_user.playlists
     else
       redirect_to root_path, alert: 'Please login with Spotify first'
