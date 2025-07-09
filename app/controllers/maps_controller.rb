@@ -2,7 +2,7 @@ class MapsController < ApplicationController
   before_action :require_login
 
   def index
-    # ユーザーの位置情報を取得（なければnilに設定）
+    # ユーザーの位置情報を取得
     @user_location = if current_user.has_location?
       {
         latitude: current_user.latitude,
@@ -10,6 +10,8 @@ class MapsController < ApplicationController
         location_name: current_user.location_name
       }
     else
+      # 緯度・経度がnilの場合でも、@user_location自体はハッシュとして存在させる
+      # ただし、nilのままroundを呼ばないようにビュー側でnilチェックを強化する
       {
         latitude: nil,
         longitude: nil,
@@ -18,21 +20,10 @@ class MapsController < ApplicationController
     end
 
     # Spotifyプレイリストの取得
-    if session[:spotify_user_data]
+    if logged_in? && current_user.access_token.present?
       begin
-        # RSpotifyが期待する形式に変換してからユーザーを再生成
-        spotify_user_data = {
-          'credentials' => {
-            'token' => session[:spotify_user_data]['credentials']['token'],
-            'refresh_token' => session[:spotify_user_data]['credentials']['refresh_token'],
-            'expires' => session[:spotify_user_data]['credentials']['expires'],
-            'expires_at' => session[:spotify_user_data]['credentials']['expires_at']
-          },
-          'id' => session[:spotify_user_data]['uid'],
-          'info' => session[:spotify_user_data]['info']
-        }
-
-        @spotify_user = RSpotify::User.new(spotify_user_data)
+        current_user.refresh_token_if_expired!
+        @spotify_user = current_user.to_rspotify_user
         @playlists = @spotify_user.playlists.map do |playlist|
           {
             name: playlist.name,
@@ -42,7 +33,7 @@ class MapsController < ApplicationController
       rescue => e
         Rails.logger.error "RSpotify error in maps: #{e.message}"
         @playlists = []
-        flash[:warning] = "Spotifyとの連携に問題が発生しました。"
+        flash[:warning] = "Spotifyとの連携に問題が発生しました。再度ログインしてください。"
       end
     else
       @playlists = []
@@ -53,6 +44,11 @@ class MapsController < ApplicationController
   private
 
   def require_login
-    redirect_to login_path unless logged_in?
+    unless logged_in?
+      respond_to do |format|
+        format.html { redirect_to login_path, alert: 'ログインが必要です。' }
+        format.json { render json: { error: 'ログインが必要です。' }, status: :unauthorized }
+      end
+    end
   end
 end

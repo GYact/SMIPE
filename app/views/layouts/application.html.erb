@@ -11,9 +11,7 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <% if session[:spotify_user_data]&.dig("credentials", "token").present? %>
-      <meta name="spotify-token" content="<%= session[:spotify_user_data]["credentials"]["token"] %>">
-    <% end %>
+    
 
     <%= yield :head %>
 
