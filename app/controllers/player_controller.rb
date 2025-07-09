@@ -6,37 +6,27 @@ class PlayerController < ApplicationController
       auth_data = session[:spotify_user_data]
       begin
         @spotify_user = RSpotify::User.new(auth_data)
-
-        # 最初にAPIを呼び出してトークンをリフレッシュさせる
         @playlists = @spotify_user.playlists
-
-        # リフレッシュ後の新しいアクセストークンを取得
         @access_token = @spotify_user.credentials['token']
         session[:spotify_user_data]['credentials']['token'] = @access_token
 
-        @all_track_uris = []
-        @playlists.each do |playlist|
-          tracks = playlist.tracks
-          @all_track_uris.concat(tracks.map(&:uri))
-        end
-
-        # 選択されたプレイリストIDを取得
         @selected_playlist_id = session[:selected_playlist_id] || @playlists.first&.id
-        
-        # 選択されたプレイリストを特定
         selected_playlist = @playlists.find { |p| p.id == @selected_playlist_id }
+
         if selected_playlist && selected_playlist.tracks.any?
           @first_track = selected_playlist.tracks.first
           @first_track_uri = @first_track.uri
+          @all_track_uris = selected_playlist.tracks.map(&:uri)
         else
-          # 選択されたプレイリストが見つからない場合は最初のプレイリストを使用
           first_playlist = @playlists.first
           if first_playlist && first_playlist.tracks.any?
             @first_track = first_playlist.tracks.first
             @first_track_uri = @first_track.uri
+            @all_track_uris = first_playlist.tracks.map(&:uri)
           else
             @first_track = nil
             @first_track_uri = nil
+            @all_track_uris = []
           end
         end
 
@@ -49,7 +39,6 @@ class PlayerController < ApplicationController
         } : nil
 
       rescue RestClient::BadRequest
-        # トークンのリフレッシュに失敗した場合、再ログインを促す
         log_out
         session.delete(:spotify_user_data)
         return redirect_to root_path, alert: 'Spotify session expired. Please login again.'
@@ -180,7 +169,22 @@ class PlayerController < ApplicationController
       Rails.logger.info "Location: #{location.name}, User: #{location.user&.name || location.user&.nickname || 'Unknown'}"
     end
     
+    # Spotify APIから画像URLを取得
+    playlist_images = {}
+    if session[:spotify_user_data]
+      begin
+        spotify_user = RSpotify::User.new(session[:spotify_user_data])
+        all_playlists = spotify_user.playlists
+        all_playlists.each do |pl|
+          playlist_images[pl.id] = pl.images.first['url'] if pl.images&.any?
+        end
+      rescue => e
+        Rails.logger.error "Error fetching playlist images: #{e.message}"
+      end
+    end
+    
     render json: @playlist_locations.map { |location|
+      playlist_id = location.uri&.split(':')&.last
       {
         id: location.id,
         name: location.name,
@@ -190,7 +194,8 @@ class PlayerController < ApplicationController
         location_name: location.location_name,
         created_at: location.created_at,
         user_nickname: location.user&.name || location.user&.nickname || "不明なユーザー",
-        user_image: location.user&.image
+        user_image: location.user&.image,
+        playlist_image: playlist_images[playlist_id]
       }
     }
   end

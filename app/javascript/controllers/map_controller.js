@@ -194,19 +194,35 @@ export default class extends Controller {
     const userNickname = location.user_nickname || '不明なユーザー';
     const userImage = location.user_image || '';
     const playlistName = location.name || 'プレイリスト名不明';
+    const playlistImage = location.playlist_image || null;
     
     // デバッグ情報をコンソールに出力
     console.log('Adding playlist marker:', {
       name: location.name,
       playlistName: playlistName,
       userNickname: userNickname,
-      uri: location.uri
+      uri: location.uri,
+      playlistImage: playlistImage
     });
     
-    const marker = L.marker([location.latitude, location.longitude])
+    // カスタムアイコン
+    let markerOptions = {};
+    if (playlistImage) {
+      markerOptions.icon = L.icon({
+        iconUrl: playlistImage,
+        iconSize: [48, 48],
+        iconAnchor: [24, 48],
+        popupAnchor: [0, -48],
+        className: 'playlist-leaflet-icon'
+      });
+    }
+    
+    const marker = L.marker([location.latitude, location.longitude], markerOptions)
       .bindPopup(`
         <div class="playlist-marker-popup">
-          <h4>${playlistName}</h4>
+          <div style="font-weight:bold; color:#1DB954; font-size:16px; margin-bottom:4px;">
+            プレイリスト名: ${playlistName}
+          </div>
           <p>場所: ${location.location_name}</p>
           <p>保存日時: ${new Date(location.created_at).toLocaleString('ja-JP')}</p>
           <div class="user-info">

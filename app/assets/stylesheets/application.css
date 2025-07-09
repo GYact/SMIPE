@@ -9,3 +9,8 @@ body {
     margin: 0;
     padding: 0;
 }
+
+.playlist-leaflet-icon img {
+  border-radius: 0 !important;
+  /* 必要なら枠線や影も追加できます */
+}
