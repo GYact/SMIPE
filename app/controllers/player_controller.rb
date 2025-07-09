@@ -57,11 +57,24 @@ class PlayerController < ApplicationController
   end
 
   def update_selected_playlist
-    if params[:playlist_id].present?
-      session[:selected_playlist_id] = params[:playlist_id]
-      render json: { status: 'success' }
+    Rails.logger.info "update_selected_playlist called with params: #{params.inspect}"
+    
+    playlist_id = params[:playlist_id] || params.dig(:playlist, :id)
+    playlist_uri = params[:playlist_uri] || params.dig(:playlist, :uri)
+    
+    if playlist_id.present?
+      session[:selected_playlist_id] = playlist_id
+      Rails.logger.info "Selected playlist ID: #{playlist_id}"
+      render json: { status: 'success', playlist_id: playlist_id }
+    elsif playlist_uri.present?
+      # URIからIDを抽出
+      playlist_id_from_uri = playlist_uri.split(':').last
+      session[:selected_playlist_id] = playlist_id_from_uri
+      Rails.logger.info "Selected playlist ID from URI: #{playlist_id_from_uri}"
+      render json: { status: 'success', playlist_id: playlist_id_from_uri }
     else
-      render json: { status: 'error', message: 'No playlist selected' }, status: :bad_request
+      Rails.logger.error "No playlist_id or playlist_uri provided"
+      render json: { status: 'error', message: 'プレイリストIDまたはURIが必要です' }, status: :bad_request
     end
   end
 
@@ -112,7 +125,30 @@ class PlayerController < ApplicationController
 
   def locations
     @playlist_locations = PlaylistLocation.includes(:user).order(created_at: :desc)
+    
+    # デバッグ情報をログに出力
+    Rails.logger.info "Playlist locations found: #{@playlist_locations.count}"
+    @playlist_locations.each do |location|
+      Rails.logger.info "Location: #{location.name}, User: #{location.user&.name || location.user&.nickname || 'Unknown'}"
+    end
+    
+    # Spotify APIから画像URLを取得
+    playlist_images = {}
+    if logged_in? && current_user.access_token.present?
+      begin
+        current_user.refresh_token_if_expired!
+        spotify_user = current_user.to_rspotify_user
+        all_playlists = spotify_user.playlists
+        all_playlists.each do |pl|
+          playlist_images[pl.id] = pl.images.first['url'] if pl.images&.any?
+        end
+      rescue => e
+        Rails.logger.error "Error fetching playlist images: #{e.message}"
+      end
+    end
+    
     render json: @playlist_locations.map { |location|
+      playlist_id = location.uri&.split(':')&.last
       {
         id: location.id,
         name: location.name,
@@ -121,8 +157,9 @@ class PlayerController < ApplicationController
         longitude: location.longitude,
         location_name: location.location_name,
         created_at: location.created_at,
-        user_nickname: location.user&.nickname || location.user&.name || "不明なユーザー",
-        user_image: location.user&.image
+        user_nickname: location.user&.name || location.user&.nickname || "不明なユーザー",
+        user_image: location.user&.image,
+        playlist_image: playlist_images[playlist_id]
       }
     }
   end

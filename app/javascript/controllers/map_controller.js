@@ -193,15 +193,59 @@ export default class extends Controller {
   addPlaylistMarker(location) {
     const userNickname = location.user_nickname || '不明なユーザー';
     const userImage = location.user_image || '';
-    const marker = L.marker([location.latitude, location.longitude])
+    const playlistName = location.name || 'プレイリスト名不明';
+    const playlistImage = location.playlist_image || null;
+    
+    // デバッグ情報をコンソールに出力
+    console.log('Adding playlist marker:', {
+      name: location.name,
+      playlistName: playlistName,
+      userNickname: userNickname,
+      uri: location.uri,
+      playlistImage: playlistImage
+    });
+    
+    // カスタムアイコン
+    let markerOptions = {};
+    if (playlistImage) {
+      markerOptions.icon = L.icon({
+        iconUrl: playlistImage,
+        iconSize: [48, 48],
+        iconAnchor: [24, 48],
+        popupAnchor: [0, -48],
+        className: 'playlist-leaflet-icon'
+      });
+    }
+    
+    const marker = L.marker([location.latitude, location.longitude], markerOptions)
       .bindPopup(`
         <div class="playlist-marker-popup">
-          <h4>${location.name}</h4>
+          <div style="font-weight:bold; color:#1DB954; font-size:16px; margin-bottom:4px;">
+            プレイリスト名: ${playlistName}
+          </div>
           <p>場所: ${location.location_name}</p>
           <p>保存日時: ${new Date(location.created_at).toLocaleString('ja-JP')}</p>
           <div class="user-info">
             ${userImage ? `<img src="${userImage}" alt="${userNickname}" class="user-avatar" style="width:32px;height:32px;border-radius:50%;margin-right:8px;">` : ''}
             <span>保存者: ${userNickname}</span>
+          </div>
+          <div class="playlist-actions" style="margin-top: 15px;">
+            <button class="play-playlist-btn" onclick="window.playPlaylistFromMap('${location.uri}', '${location.name}')" style="
+              background: #1DB954;
+              color: white;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 20px;
+              cursor: pointer;
+              font-size: 14px;
+              font-weight: bold;
+              display: flex;
+              align-items: center;
+              gap: 5px;
+            ">
+              <i class="fas fa-play" style="font-size: 12px;"></i>
+              再生
+            </button>
           </div>
         </div>
       `);
@@ -300,3 +344,40 @@ export default class extends Controller {
       });
   }
 }
+
+// グローバル関数としてプレイリスト再生機能を追加
+window.playPlaylistFromMap = function(playlistUri, playlistName) {
+  // プレイリストIDをURIから抽出
+  const playlistId = playlistUri.split(':').pop();
+  
+  // プレイリストを選択してプレイヤーに送信
+  fetch('/player/update_selected_playlist', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    },
+    body: JSON.stringify({
+      playlist_id: playlistId,
+      playlist_uri: playlistUri
+    })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('プレイリストの選択に失敗しました');
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.status === 'success') {
+      // プレイヤーページに遷移
+      window.location.href = '/player';
+    } else {
+      alert('プレイリストの選択に失敗しました');
+    }
+  })
+  .catch(error => {
+    console.error('エラー:', error);
+    alert('プレイリストの再生に失敗しました');
+  });
+};
