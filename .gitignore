@@ -126,5 +126,8 @@ build-iPhoneSimulator/
 
 # End of https://www.toptal.com/developers/gitignore/api/ruby,rails
 
+# Vendor JavaScript libraries (third-party assets)
+vendor/javascript/
+
 Explain
 /config/master.key
