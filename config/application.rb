@@ -23,10 +23,13 @@ module Smipe
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
-    
+
     # アセットパイプラインの設定
     config.assets.enabled = true
     config.assets.version = '1.0'
     config.assets.paths << Rails.root.join('app', 'assets', 'stylesheets')
+
+    # ✅ ActiveRecordセッションストアを使用
+    config.session_store :active_record_store, key: '_smipe_session'
   end
 end
