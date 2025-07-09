@@ -40,7 +40,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_09_045343) do
     t.index ["user_id"], name: "index_playlists_on_user_id"
   end
 
-<<<<<<< HEAD
   create_table "sessions", force: :cascade do |t|
     t.string "session_id", null: false
     t.text "data"
@@ -58,7 +57,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_09_045343) do
     t.index ["channel"], name: "index_solid_cable_messages_on_channel"
     t.index ["channel_hash"], name: "index_solid_cable_messages_on_channel_hash"
     t.index ["created_at"], name: "index_solid_cable_messages_on_created_at"
-  end
   end
 
   create_table "users", force: :cascade do |t|
