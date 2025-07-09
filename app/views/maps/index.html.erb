@@ -11,7 +11,7 @@
   <div class="location-info">
     <h3>位置情報</h3>
     <div data-map-target="locationDisplay" id="location-display">
-      <% if @user_location && @user_location[:latitude] != 0 && @user_location[:longitude] != 0 %>
+      <% if @user_location && @user_location[:latitude].present? && @user_location[:longitude].present? %>
         <div class="coordinates">
           <strong>保存された位置:</strong><br>
           緯度: <%= @user_location[:latitude].round(4) %><br>

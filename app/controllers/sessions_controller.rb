@@ -24,28 +24,34 @@ class SessionsController < ApplicationController
 
     user = User.find_by(uid: user_data[:uid]) 
 
-    if user 
-      log_in(user) 
-      session[:spotify_user_data] = raw_data  # RSpotify用に完全データを保存
-      flash[:success] = "ログインしました" 
+    if user
+      user.update(
+        access_token: user_data[:credentials][:token],
+        refresh_token: user_data[:credentials][:refresh_token],
+        expires_at: Time.at(user_data[:credentials][:expires_at])
+      )
+      log_in(user)
+      flash[:success] = "ログインしました"
       redirect_to player_page_path
-    else 
+    else
       new_user = User.new(
         uid: user_data[:uid],
         name: user_data[:name],
         nickname: user_data[:nickname],
-        image: user_data[:image]
+        image: user_data[:image],
+        access_token: user_data[:credentials][:token],
+        refresh_token: user_data[:credentials][:refresh_token],
+        expires_at: Time.at(user_data[:credentials][:expires_at])
       )
 
-      if new_user.save 
-        log_in(new_user) 
-        session[:spotify_user_data] = raw_data
-        flash[:success] = "ユーザー登録成功" 
+      if new_user.save
+        log_in(new_user)
+        flash[:success] = "ユーザー登録成功"
         redirect_to player_page_path
-      else 
-        flash[:danger] = "予期せぬエラーが発生しました" 
+      else
+        flash[:danger] = "予期せぬエラーが発生しました"
         redirect_to root_url
-      end 
+      end
     end 
   end 
 
