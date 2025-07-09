@@ -9,7 +9,6 @@ export default class extends Controller {
                      currentIndex: Number, isLiked: Boolean, isShuffled: Boolean, previousTracks: Array }
 
   connect() {
-    console.log('Player controller connected');
     this.touchStartX = 0
     this.touchStartY = 0
     this.isDragging = false
@@ -38,9 +37,7 @@ export default class extends Controller {
   }
 
   makePlayable() {
-    console.log('makePlayable called');
     this.playPauseButtonTarget.disabled = false;
-    console.log('Play button disabled status:', this.playPauseButtonTarget.disabled);
     // 初期トラックの表示と再生
     if (this.trackUrisValue.length > 0) {
       this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
@@ -84,7 +81,6 @@ export default class extends Controller {
   }
 
   playingValueChanged() {
-    console.log(`Playing state changed to: ${this.playingValue}`);
     if (this.playingValue) {
       // 再生中の状態
       this.playIconTarget.style.display = 'none';
@@ -99,7 +95,6 @@ export default class extends Controller {
   }
 
   setupTouchEvents() {
-    console.log('Setting up touch events');
     const albumArt = this.albumArtTarget;
     const albumImage = this.albumImageTarget;
 
@@ -107,8 +102,6 @@ export default class extends Controller {
       console.error('Album art or image target not found');
       return;
     }
-
-    console.log('Album art and image targets found, setting up events');
 
     // タッチイベントの設定
     albumArt.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
@@ -138,25 +131,21 @@ export default class extends Controller {
 
   handleTouchStart(e) {
     e.preventDefault();
-    console.log('Touch start detected');
     this.touchStartX = e.touches[0].clientX;
     this.touchStartY = e.touches[0].clientY;
     this.isDragging = true;
     this.dragDirection = null;
     this.albumImageTarget.style.transition = 'none';
     this.albumImageTarget.style.cursor = 'grabbing';
-    console.log(`Touch start position: X=${this.touchStartX}, Y=${this.touchStartY}`);
   }
 
   handleMouseDown(e) {
-    console.log('Mouse down detected');
     this.touchStartX = e.clientX;
     this.touchStartY = e.clientY;
     this.isDragging = true;
     this.dragDirection = null;
     this.albumImageTarget.style.transition = 'none';
     this.albumImageTarget.style.cursor = 'grabbing';
-    console.log(`Mouse down position: X=${this.touchStartX}, Y=${this.touchStartY}`);
   }
 
   handleTouchMove(e) {
@@ -165,25 +154,21 @@ export default class extends Controller {
 
     const touchX = e.touches[0].clientX;
     const touchY = e.touches[0].clientY;
-    console.log(`Touch move: X=${touchX}, Y=${touchY}`);
     this.updateDragPosition(touchX, touchY);
   }
 
   handleMouseMove(e) {
     if (!this.isDragging) return;
-    console.log(`Mouse move: X=${e.clientX}, Y=${e.clientY}`);
     this.updateDragPosition(e.clientX, e.clientY);
   }
 
   updateDragPosition(x, y) {
     const diffX = x - this.touchStartX;
     const diffY = y - this.touchStartY;
-    console.log(`Drag distance: X=${diffX}, Y=${diffY}`);
 
     // ドラッグ方向の決定（最初の移動で決定）
     if (!this.dragDirection && (Math.abs(diffX) > 10 || Math.abs(diffY) > 10)) {
       this.dragDirection = Math.abs(diffX) > Math.abs(diffY) ? 'horizontal' : 'vertical';
-      console.log(`Drag direction set to: ${this.dragDirection}`);
     }
 
     // ドラッグ方向に応じた移動制限
@@ -231,13 +216,11 @@ export default class extends Controller {
 
   handleTouchEnd(e) {
     if (!this.isDragging) return;
-    console.log('Touch end detected');
     this.handleDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
   }
 
   handleMouseUp(e) {
     if (!this.isDragging) return;
-    console.log('Mouse up detected');
     this.handleDragEnd(e.clientX, e.clientY);
   }
 
@@ -246,8 +229,6 @@ export default class extends Controller {
     const diffY = y - this.touchStartY;
     const minSwipeDistance = 100;
 
-    console.log(`Drag end - Distance: X=${diffX}, Y=${diffY}`);
-
     // アニメーションをリセット
     this.albumImageTarget.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
     this.albumImageTarget.style.transform = '';
@@ -255,29 +236,22 @@ export default class extends Controller {
     this.albumImageTarget.style.cursor = 'grab';
 
     if (Math.abs(diffX) > minSwipeDistance || Math.abs(diffY) > minSwipeDistance) {
-      console.log('Swipe detected - calculating direction');
       const dominantDirection = this.getDominantDirection(diffX, diffY);
       
       switch (dominantDirection) {
         case 'right':
-          console.log('Swipe right - Add to library');
           this.handleSwipeRight();
           break;
         case 'left':
-          console.log('Swipe left - Remove from library');
           this.handleSwipeLeft();
           break;
         case 'down':
-          console.log('Swipe down - Previous track');
           this.handleSwipeDown();
           break;
         case 'up':
-          console.log('Swipe up - Next track');
           this.handleSwipeUp();
           break;
       }
-    } else {
-      console.log('Swipe distance too small, no action taken');
     }
 
     this.isDragging = false;
@@ -343,7 +317,6 @@ export default class extends Controller {
         uris: [currentTrackUri]
       })
     }).then(() => {
-      console.log(`Now playing: ${currentTrackUri}`);
     }).catch(err => {
       console.error('Playback start error:', err);
     });
@@ -397,10 +370,8 @@ export default class extends Controller {
   }
 
   handleSkip() {
-    console.log('Skip button clicked');
     this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
     this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
-    console.log(`Skipping to track index ${this.currentIndexValue}`);
     this.playCurrentTrack();
     this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
     this.updateUpNextDisplay();
@@ -414,10 +385,8 @@ export default class extends Controller {
   }
 
   handleNext() {
-    console.log('Next track (swipe up)');
     this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
     this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
-    console.log(`Moving to next track index ${this.currentIndexValue}`);
     this.playCurrentTrack();
     this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
     this.updateUpNextDisplay();
@@ -425,14 +394,11 @@ export default class extends Controller {
   }
 
   handlePrevious() {
-    console.log('Previous track (swipe down)');
     if (this.previousTracksValue.length > 0) {
       this.currentIndexValue = this.previousTracksValue.pop();
-      console.log(`Moving to previous track index ${this.currentIndexValue}`);
     } else {
       // 履歴がない場合は最後の曲に移動
       this.currentIndexValue = (this.currentIndexValue - 1 + this.trackUrisValue.length) % this.trackUrisValue.length;
-      console.log(`Moving to last track index ${this.currentIndexValue}`);
     }
     this.playCurrentTrack();
     this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
@@ -526,10 +492,8 @@ export default class extends Controller {
   }
 
   handleLike(isAdd) {
-    console.log(`Like button clicked: ${isAdd ? 'Add' : 'Remove'}`);
     this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
     this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
-    console.log(`Skipping to track index ${this.currentIndexValue}`);
     this.playCurrentTrack();
     this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
     this.updateUpNextDisplay();
@@ -579,14 +543,12 @@ export default class extends Controller {
         const errorData = await response.json();
         // 重複曲の場合はエラーメッセージを表示しない
         if (errorData.error?.message?.includes('already exists')) {
-          console.log('Track already exists in playlist');
           this.handleSkip();
           return;
         }
         throw new Error(errorData.error?.message || 'Failed to add track to playlist');
       }
 
-      console.log(`Added track to playlist: ${playlistName}`);
       this.handleSkip();
     } catch (error) {
       console.error('Error adding track to playlist:', error);
@@ -611,7 +573,7 @@ export default class extends Controller {
       // プレイリストの所有者権限を確認
       // Note: @spotify_user.id はRails側でしか取得できないため、ここでは簡易的にチェック
       // より厳密にはサーバーサイドでチェックすべき
-      // if (playlistData.owner.id !== '<%= @spotify_user.id %>') {
+      // if (playlistData.owner.id !== '''<%= @spotify_user.id %>''') {
       //   console.error('Cannot modify playlist: Not the owner');
       //   alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
       //   return;
@@ -633,7 +595,6 @@ export default class extends Controller {
         throw new Error(errorData.error?.message || 'Failed to remove track from playlist');
       }
 
-      console.log(`Removed track from playlist: ${playlistName}`);
       this.handleSkip();
     } catch (error) {
       console.error('Error removing track from playlist:', error);
@@ -670,7 +631,7 @@ export default class extends Controller {
         
         // Note: @spotify_user.id はRails側でしか取得できないため、ここでは簡易的にチェック
         // より厳密にはサーバーサイドでチェックすべき
-        // if (playlistData.owner.id !== '<%= @spotify_user.id %>') {
+        // if (playlistData.owner.id !== '''<%= @spotify_user.id %>''') {
         //   alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
         //   const previousSelection = this.selectedPlaylistRadiosTarget.querySelector('input[name="selected_playlist"][checked]');
         //   if (previousSelection) {
@@ -689,7 +650,6 @@ export default class extends Controller {
           body: JSON.stringify({ playlist_id: playlistId })
         });
 
-        console.log(`Selected playlist: ${playlistName} (${playlistId})`);
         this.selectedPlaylistIdValue = playlistId; // Stimulus valueを更新
       } catch (error) {
         console.error('Error selecting playlist:', error);
@@ -697,4 +657,4 @@ export default class extends Controller {
       }
     }
   }
-} 
+}
