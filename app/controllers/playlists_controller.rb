@@ -1,53 +1,52 @@
 class PlaylistsController < ApplicationController
   def index
-    if session[:spotify_user_data]
-      auth_data = session[:spotify_user_data]
-      @spotify_user = RSpotify::User.new(auth_data)
+    unless logged_in? && current_user.access_token.present?
+      redirect_to root_path, alert: 'Spotifyとの連携が必要です。'
+      return
+    end
 
-      # RSpotifyの認証情報を更新
-      # これにより、API呼び出しが正しく認証される
-      if auth_data['credentials'] && auth_data['credentials']['token']
-        RSpotify.authenticate(ENV['SPOTIFY_CLIENT_ID'], ENV['SPOTIFY_CLIENT_SECRET'])
-        # credentials = auth_data['credentials']
-        # RSpotify.authenticate(credentials['token'], credentials['refresh_token'])
-      end
-
+    begin
+      current_user.refresh_token_if_expired!
+      @spotify_user = current_user.to_rspotify_user
       @playlists = @spotify_user.playlists
-    else
-      redirect_to root_path, alert: 'Please login with Spotify first'
+    rescue => e
+      Rails.logger.error "RSpotify error in playlists index: #{e.message}"
+      redirect_to root_path, alert: 'Spotifyとの連携に問題が発生しました。再度ログインしてください。'
     end
   end
 
   def tracks
     respond_to do |format|
       format.json do
+        unless logged_in? && current_user.access_token.present?
+          render json: { error: 'Spotify認証情報がありません' }, status: :unauthorized
+          return
+        end
+
         begin
-          spotify_user_data = session[:spotify_user_data]
-          if spotify_user_data
-            user = RSpotify::User.new(spotify_user_data)
-            playlist_id = params[:id]
-            playlist = user.playlists.find { |pl| pl.id == playlist_id }
-            if playlist
-              tracks = playlist.tracks.map do |track|
-                {
-                  id: track.id,
-                  name: track.name,
-                  artists: track.artists.map(&:name),
-                  album: {
-                    name: track.album.name,
-                    images: track.album.images
-                  },
-                  uri: track.uri
-                }
-              end
-              render json: tracks
-            else
-              render json: { error: 'Playlist not found' }, status: :not_found
+          current_user.refresh_token_if_expired!
+          user = current_user.to_rspotify_user
+          playlist_id = params[:id]
+          playlist = user.playlists.find { |pl| pl.id == playlist_id }
+          if playlist
+            tracks = playlist.tracks.map do |track|
+              {
+                id: track.id,
+                name: track.name,
+                artists: track.artists.map(&:name),
+                album: {
+                  name: track.album.name,
+                  images: track.album.images
+                },
+                uri: track.uri
+              }
             end
+            render json: tracks
           else
-            render json: { error: 'Spotify認証情報がありません' }, status: :unauthorized
+            render json: { error: 'Playlist not found' }, status: :not_found
           end
         rescue => e
+          Rails.logger.error "RSpotify error in playlists tracks: #{e.message}"
           render json: { error: e.message }, status: :internal_server_error
         end
       end

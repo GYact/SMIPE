@@ -50,14 +50,32 @@ class User < ApplicationRecord
   # プレイリスト関連
   has_many :playlist_locations, dependent: :destroy
 
-  # Spotify情報の再構築用
-  def rspotify_user
-    return nil unless self.spotify_data.present?
-    RSpotify::User.new(self.spotify_data)
-  end
-
   # Spotify画像用
   def spotify_image_url
     image.presence
+  end
+
+  # RSpotify用のメソッド
+  def to_rspotify_user
+    RSpotify::User.new({
+      'id' => self.uid,
+      'credentials' => {
+        'token' => self.access_token,
+        'refresh_token' => self.refresh_token,
+        'expires_at' => self.expires_at.to_i
+      }
+    })
+  end
+
+  def refresh_token_if_expired!
+    return unless self.expires_at.present? && self.expires_at < Time.now
+
+    spotify_user = self.to_rspotify_user
+    new_credentials = spotify_user.credentials.refresh!
+    
+    self.update!(
+      access_token: new_credentials['token'],
+      expires_at: Time.at(new_credentials['expires_at'])
+    )
   end
 end
