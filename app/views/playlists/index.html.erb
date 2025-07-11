@@ -25,9 +25,9 @@
       <% @playlists.each do |playlist| %>
         <div class="playlist-card" data-action="click->playlists#toggleTracks" data-playlists-playlist-id-value="<%= playlist.id %>">
           <div class="playlist-image-container">
-            <img src="<%= playlist.images.first&.dig('url') || 'default_playlist_image.jpg' %>" 
-                 alt="<%= playlist.name %>" 
-                 class="playlist-image">
+            <img src="<%= playlist.images&.first&.dig('url') || 'default_playlist_image.jpg' %>" 
+              alt="<%= playlist.name %>" 
+              class="playlist-image">
           </div>
           <div class="playlist-info">
             <h3 class="playlist-name"><%= playlist.name %></h3>

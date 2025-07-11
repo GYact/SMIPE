@@ -38,6 +38,12 @@
     </div>
 
     <div class="player-actions">
+      <button class="action-button delete-button" id="delete-button" data-player-target="deleteButton" data-action="click->player#handleDelete">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 3v1H4v2h1v13c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V6h1V4h-5V3H9zm0 5h2v9H9V8zm4 0h2v9h-2V8z"/>
+        </svg>
+        <span>Delete</span>
+      </button>
       <button id="play-pause-btn" class="action-button play-button" data-action="click->player#togglePlay" data-player-target="playPauseButton" disabled>
         <svg id="play-icon" data-player-target="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M8 5v14l11-7z"/>
