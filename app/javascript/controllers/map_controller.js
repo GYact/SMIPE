@@ -58,7 +58,16 @@ export default class extends Controller {
 
         if (this.marker) this.map.removeLayer(this.marker);
 
-        this.marker = L.marker([latitude, longitude]).addTo(this.map)
+        // 現在地ピンを全身人型アイコンで表示
+        const currentLocationIcon = L.divIcon({
+          className: 'current-location-icon',
+          html: '<i class="fas fa-person"></i>',
+          iconSize: [36, 36],
+          iconAnchor: [18, 36],
+          popupAnchor: [0, -36]
+        });
+
+        this.marker = L.marker([latitude, longitude], { icon: currentLocationIcon }).addTo(this.map)
           .bindPopup(`
             <div>
               <strong>現在位置</strong><br>

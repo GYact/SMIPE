@@ -5,15 +5,67 @@ class PlayerController < ApplicationController
     current_user.refresh_token_if_expired!
     @spotify_user = current_user.to_rspotify_user
     @access_token = @spotify_user.credentials['token']
+    session[:spotify_user_data] ||= {}
+    session[:spotify_user_data]['credentials'] ||= {}
+    session[:spotify_user_data]['credentials']['token'] = @access_token
 
     @playlists = @spotify_user.playlists
-    @all_track_uris = @playlists.flat_map { |p| p.tracks.map(&:uri) }
-
     @selected_playlist_id = session[:selected_playlist_id] || @playlists.first&.id
-    
-    first_playlist = @playlists.first
-    if first_playlist&.tracks&.any?
-      @first_track_uri = first_playlist.tracks.first.uri
+    @selected_playlist_uri = session[:selected_playlist_uri]
+
+    selected_playlist = @playlists.find { |p| p.id == @selected_playlist_id }
+
+    if selected_playlist&.tracks&.any?
+      @first_track = selected_playlist.tracks.first
+      @first_track_uri = @first_track.uri
+      @all_track_uris = selected_playlist.tracks.map(&:uri)
+    elsif @selected_playlist_uri.present?
+      uri_parts = @selected_playlist_uri.split(":")
+      if @selected_playlist_uri.start_with?("spotify:user:") && uri_parts.length >= 5
+        user_id = uri_parts[2]
+        playlist_id = uri_parts[4]
+      elsif @selected_playlist_uri.start_with?("spotify:playlist:") && uri_parts.length >= 3
+        user_id = nil
+        playlist_id = uri_parts[2]
+      else
+        user_id = nil
+        playlist_id = @selected_playlist_id
+      end
+
+      begin
+        playlist =
+          if user_id
+            RSpotify::Playlist.find(user_id, playlist_id)
+          else
+            @playlists.find { |p| p.id == playlist_id }
+          end
+
+        if playlist && playlist.tracks.any?
+          @first_track = playlist.tracks.first
+          @first_track_uri = @first_track.uri
+          @all_track_uris = playlist.tracks.map(&:uri)
+        else
+          @first_track = nil
+          @first_track_uri = nil
+          @all_track_uris = []
+        end
+      rescue => e
+        Rails.logger.error "他ユーザープレイリスト取得エラー: #{e.message}"
+        @first_track = nil
+        @first_track_uri = nil
+        @all_track_uris = []
+      end
+    else
+      first_playlist = @playlists.first
+      if first_playlist&.tracks&.any?
+        @first_track = first_playlist.tracks.first
+        @first_track_uri = @first_track.uri
+        @all_track_uris = first_playlist.tracks.map(&:uri)
+      else
+        @first_track = nil
+        @first_track_uri = nil
+        @all_track_uris = []
+      end
     end
 
     @user_location = current_user.has_location? ? {
@@ -25,7 +77,6 @@ class PlayerController < ApplicationController
     } : nil
 
   rescue RestClient::BadRequest, NoMethodError
-    # トークンのリフレッシュに失敗した場合、再ログインを促す
     log_out
     redirect_to root_path, alert: 'Spotify session expired. Please login again.'
   rescue => e
@@ -41,7 +92,6 @@ class PlayerController < ApplicationController
     playlists = spotify_user.playlists
 
     playlists.each do |playlist|
-      # Using find_or_create_by to avoid duplicates
       pl = current_user.playlists.find_or_create_by(spotify_id: playlist.id)
       pl.update(
         name: playlist.name,
@@ -67,7 +117,6 @@ class PlayerController < ApplicationController
       Rails.logger.info "Selected playlist ID: #{playlist_id}"
       render json: { status: 'success', playlist_id: playlist_id }
     elsif playlist_uri.present?
-      # URIからIDを抽出
       playlist_id_from_uri = playlist_uri.split(':').last
       session[:selected_playlist_id] = playlist_id_from_uri
       Rails.logger.info "Selected playlist ID from URI: #{playlist_id_from_uri}"
@@ -126,13 +175,11 @@ class PlayerController < ApplicationController
   def locations
     @playlist_locations = PlaylistLocation.includes(:user).order(created_at: :desc)
     
-    # デバッグ情報をログに出力
     Rails.logger.info "Playlist locations found: #{@playlist_locations.count}"
     @playlist_locations.each do |location|
       Rails.logger.info "Location: #{location.name}, User: #{location.user&.name || location.user&.nickname || 'Unknown'}"
     end
     
-    # Spotify APIから画像URLを取得
     playlist_images = {}
     if logged_in? && current_user.access_token.present?
       begin
@@ -168,7 +215,6 @@ class PlayerController < ApplicationController
 
   def require_login
     unless logged_in?
-      # For HTML requests, redirect. For JSON, render error.
       respond_to do |format|
         format.html { redirect_to root_path, alert: 'ログインが必要です。' }
         format.json { render json: { error: 'ログインが必要です。' }, status: :unauthorized }

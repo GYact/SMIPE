@@ -14,3 +14,15 @@ body {
   border-radius: 0 !important;
   /* 必要なら枠線や影も追加できます */
 }
+
+.current-location-icon {
+  background: none;
+  border: none;
+}
+.current-location-icon i {
+  color: #2196f3;
+  font-size: 36px;
+  text-shadow: 0 0 4px #fff, 0 0 8px #2196f3;
+  display: block;
+  line-height: 1;
+}
