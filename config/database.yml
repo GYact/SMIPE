@@ -34,13 +34,13 @@ test:
 production:
   primary:
     <<: *default
-    database: /app/storage/production.sqlite3
+    database: tmp/production.sqlite3
   cable:
     <<: *default
-    database: /app/storage/cable.sqlite3
+    database: tmp/cable.sqlite3
   queue:
     <<: *default
-    database: /app/storage/queue.sqlite3
+    database: tmp/queue.sqlite3
   cache:
     <<: *default
-    database: /app/storage/cache.sqlite3
+    database: tmp/cache.sqlite3

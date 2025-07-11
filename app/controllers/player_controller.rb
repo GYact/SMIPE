@@ -2,95 +2,58 @@ class PlayerController < ApplicationController
   before_action :require_login
 
   def show
-    if session[:spotify_user_data]
-      auth_data = session[:spotify_user_data]
-      begin
-        @spotify_user = RSpotify::User.new(auth_data)
-        @playlists = @spotify_user.playlists
-        @access_token = @spotify_user.credentials['token']
-        session[:spotify_user_data]['credentials']['token'] = @access_token
+    current_user.refresh_token_if_expired!
+    @spotify_user = current_user.to_rspotify_user
+    @access_token = @spotify_user.credentials['token']
 
-        @selected_playlist_id = session[:selected_playlist_id] || @playlists.first&.id
-        selected_playlist = @playlists.find { |p| p.id == @selected_playlist_id }
+    @playlists = @spotify_user.playlists
+    @all_track_uris = @playlists.flat_map { |p| p.tracks.map(&:uri) }
 
-        if selected_playlist && selected_playlist.tracks.any?
-          @first_track = selected_playlist.tracks.first
-          @first_track_uri = @first_track.uri
-          @all_track_uris = selected_playlist.tracks.map(&:uri)
-        else
-          first_playlist = @playlists.first
-          if first_playlist && first_playlist.tracks.any?
-            @first_track = first_playlist.tracks.first
-            @first_track_uri = @first_track.uri
-            @all_track_uris = first_playlist.tracks.map(&:uri)
-          else
-            @first_track = nil
-            @first_track_uri = nil
-            @all_track_uris = []
-          end
-        end
-
-        @user_location = current_user.has_location? ? {
-          latitude: current_user.latitude,
-          longitude: current_user.longitude,
-          location_name: current_user.location_name,
-          last_updated: current_user.last_location_update,
-          is_stale: current_user.location_stale?
-        } : nil
-
-      rescue RestClient::BadRequest
-        log_out
-        session.delete(:spotify_user_data)
-        return redirect_to root_path, alert: 'Spotify session expired. Please login again.'
-      rescue => e
-        Rails.logger.error "RSpotify error: #{e.message}"
-        log_out
-        session.delete(:spotify_user_data)
-        flash[:warning] = "Spotifyとの連携に問題が発生しました。再度ログインしてください。"
-        redirect_to root_path
-      end
-    else
-      log_out
-      session.delete(:spotify_user_data)
-      flash[:warning] = "Spotifyとの連携が必要です。再度ログインしてください。"
-      redirect_to root_path
+    @selected_playlist_id = session[:selected_playlist_id] || @playlists.first&.id
+    
+    first_playlist = @playlists.first
+    if first_playlist&.tracks&.any?
+      @first_track_uri = first_playlist.tracks.first.uri
     end
+
+    @user_location = current_user.has_location? ? {
+      latitude: current_user.latitude,
+      longitude: current_user.longitude,
+      location_name: current_user.location_name,
+      last_updated: current_user.last_location_update,
+      is_stale: current_user.location_stale?
+    } : nil
+
+  rescue RestClient::BadRequest, NoMethodError
+    # トークンのリフレッシュに失敗した場合、再ログインを促す
+    log_out
+    redirect_to root_path, alert: 'Spotify session expired. Please login again.'
+  rescue => e
+    Rails.logger.error "RSpotify error: #{e.message}"
+    log_out
+    flash[:warning] = "Spotifyとの連携に問題が発生しました。再度ログインしてください。"
+    redirect_to root_path
   end
 
   def save
-    if session[:spotify_user_data]
-      begin
-        spotify_user_data = {
-          'credentials' => {
-            'token' => session[:spotify_user_data]['credentials']['token'],
-            'refresh_token' => session[:spotify_user_data]['credentials']['refresh_token'],
-            'expires' => session[:spotify_user_data]['credentials']['expires'],
-            'expires_at' => session[:spotify_user_data]['credentials']['expires_at']
-          },
-          'id' => session[:spotify_user_data]['uid'],
-          'info' => session[:spotify_user_data]['info']
-        }
+    current_user.refresh_token_if_expired!
+    spotify_user = current_user.to_rspotify_user
+    playlists = spotify_user.playlists
 
-        spotify_user = RSpotify::User.new(spotify_user_data)
-        playlists = spotify_user.playlists
-
-        playlists.each do |playlist|
-          current_user.playlists.create(
-            spotify_id: playlist.id,
-            name: playlist.name,
-            latitude: current_user.latitude,
-            longitude: current_user.longitude
-          )
-        end
-
-        render json: { status: 'success' }
-      rescue => e
-        Rails.logger.error "RSpotify error in save: #{e.message}"
-        render json: { status: 'error', message: 'Spotifyとの連携に問題が発生しました。' }, status: :unprocessable_entity
-      end
-    else
-      render json: { status: 'error', message: 'Spotifyセッションが無効です。' }, status: :unauthorized
+    playlists.each do |playlist|
+      # Using find_or_create_by to avoid duplicates
+      pl = current_user.playlists.find_or_create_by(spotify_id: playlist.id)
+      pl.update(
+        name: playlist.name,
+        latitude: current_user.latitude,
+        longitude: current_user.longitude
+      )
     end
+
+    render json: { status: 'success' }
+  rescue => e
+    Rails.logger.error "RSpotify error in save: #{e.message}"
+    render json: { status: 'error', message: 'Spotifyとの連携に問題が発生しました。' }, status: :unprocessable_entity
   end
 
   def update_selected_playlist
@@ -171,9 +134,10 @@ class PlayerController < ApplicationController
     
     # Spotify APIから画像URLを取得
     playlist_images = {}
-    if session[:spotify_user_data]
+    if logged_in? && current_user.access_token.present?
       begin
-        spotify_user = RSpotify::User.new(session[:spotify_user_data])
+        current_user.refresh_token_if_expired!
+        spotify_user = current_user.to_rspotify_user
         all_playlists = spotify_user.playlists
         all_playlists.each do |pl|
           playlist_images[pl.id] = pl.images.first['url'] if pl.images&.any?
@@ -204,7 +168,11 @@ class PlayerController < ApplicationController
 
   def require_login
     unless logged_in?
-      render json: { error: 'ログインが必要です。' }, status: :unauthorized
+      # For HTML requests, redirect. For JSON, render error.
+      respond_to do |format|
+        format.html { redirect_to root_path, alert: 'ログインが必要です。' }
+        format.json { render json: { error: 'ログインが必要です。' }, status: :unauthorized }
+      end
     end
   end
 end
