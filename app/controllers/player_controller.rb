@@ -2,6 +2,10 @@ class PlayerController < ApplicationController
   before_action :require_login
 
   def show
+    # ピンからの遷移時にクエリパラメータでuriが来たらセッションに保存
+    if params[:uri].present?
+      session[:selected_playlist_uri] = params[:uri]
+    end
     current_user.refresh_token_if_expired!
     @spotify_user = current_user.to_rspotify_user
     @access_token = @spotify_user.credentials['token']
@@ -10,16 +14,11 @@ class PlayerController < ApplicationController
     session[:spotify_user_data]['credentials']['token'] = @access_token
 
     @playlists = @spotify_user.playlists
-    @selected_playlist_id = session[:selected_playlist_id] || @playlists.first&.id
+    @selected_playlist_id = session[:selected_playlist_id]
     @selected_playlist_uri = session[:selected_playlist_uri]
 
-    selected_playlist = @playlists.find { |p| p.id == @selected_playlist_id }
-
-    if selected_playlist&.tracks&.any?
-      @first_track = selected_playlist.tracks.first
-      @first_track_uri = @first_track.uri
-      @all_track_uris = selected_playlist.tracks.map(&:uri)
-    elsif @selected_playlist_uri.present?
+    # 他ユーザープレイリストURIが優先
+    if @selected_playlist_uri.present?
       uri_parts = @selected_playlist_uri.split(":")
       if @selected_playlist_uri.start_with?("spotify:user:") && uri_parts.length >= 5
         user_id = uri_parts[2]
@@ -37,7 +36,7 @@ class PlayerController < ApplicationController
           if user_id
             RSpotify::Playlist.find(user_id, playlist_id)
           else
-            @playlists.find { |p| p.id == playlist_id }
+            RSpotify::Playlist.find_by_id(playlist_id)
           end
 
         if playlist && playlist.tracks.any?
@@ -55,6 +54,22 @@ class PlayerController < ApplicationController
         @first_track_uri = nil
         @all_track_uris = []
       end
+
+    # 自分のプレイリスト選択時
+    elsif @selected_playlist_id.present?
+      selected_playlist = @playlists.find { |p| p.id == @selected_playlist_id }
+
+      if selected_playlist && selected_playlist.tracks.any?
+        @first_track = selected_playlist.tracks.first
+        @first_track_uri = @first_track.uri
+        @all_track_uris = selected_playlist.tracks.map(&:uri)
+      else
+        @first_track = nil
+        @first_track_uri = nil
+        @all_track_uris = []
+      end
+
+    # fallback
     else
       first_playlist = @playlists.first
       if first_playlist&.tracks&.any?
