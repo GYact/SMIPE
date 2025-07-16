@@ -2,13 +2,32 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel",
-                    "playPauseButton", "shuffleButton", "skipButton", "likeButton",
+                    "playPauseButton", "skipButton", "likeButton",
                     "togglePlaylistSelectionButton", "playlistSelectionPanel", "selectedPlaylistRadios",
-                    "songTitle", "artistName", "upNextItems", "deleteButton"] // deleteButtonターゲットを追加
+                    "songTitle", "artistName", "upNextItems", "deleteButton",
+                    "progressBar", "currentTime", "duration"] // SHUFFLE/REPEATボタンターゲット削除
   static values = { playing: Boolean, token: String, trackUris: Array, selectedPlaylistId: String,
-                      currentIndex: Number, isLiked: Boolean, isShuffled: Boolean, previousTracks: Array }
+                      currentIndex: Number, isLiked: Boolean, previousTracks: Array } // isShuffled削除
 
   connect() {
+    // 再生バーの自動更新（Spotify Playerのイベントが発火しない場合の暫定対応）
+    this.progressInterval = setInterval(async () => {
+      if (window.spotifyPlayer && window.spotifyPlayer.getCurrentState) {
+        const state = await window.spotifyPlayer.getCurrentState();
+        if (state && !this.progressBarDragging) {
+          this.updateProgressBar(state.position, state.duration);
+        }
+      }
+    }, 1000);
+    // 再生バー連携
+    this.progressBar = document.getElementById('progress-bar');
+    this.currentTimeLabel = document.getElementById('current-time');
+    this.durationLabel = document.getElementById('duration');
+    this.progressBar?.addEventListener('input', this.handleSeek.bind(this));
+    this.progressBarDragging = false;
+    this.progressBar?.addEventListener('mousedown', () => { this.progressBarDragging = true; });
+    this.progressBar?.addEventListener('mouseup', () => { this.progressBarDragging = false; });
+    this.lastPositionMs = 0;
     this.touchStartX = 0
     this.touchStartY = 0
     this.isDragging = false
@@ -47,26 +66,16 @@ export default class extends Controller {
     }
   }
 
-  toggleShuffle() {
-    this.isShuffledValue = !this.isShuffledValue;
-    if (this.isShuffledValue) {
-      this.trackUrisValue = this.shuffleArray([...this.trackUrisValue]);
-      this.currentIndexValue = 0; // Start from the first song after shuffling
-      this.playCurrentTrack();
-      this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
-      this.updateUpNextDisplay();
-      this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
-      this.shuffleButtonTarget.style.color = '#1DB954';
-    } else {
-      // Revert to original order (this requires storing the original array)
-      this.shuffleButtonTarget.style.color = '#B3B3B3';
-    }
-  }
+
 
   disconnect() {
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+    }
     if (window.spotifyPlayer && this.playerStateChanged) {
       window.spotifyPlayer.removeListener('player_state_changed', this.playerStateChanged);
     }
+    // SHUFFLE/REPEAT関連のクリーンアップ不要
   }
 
   togglePlay() {
@@ -315,6 +324,38 @@ export default class extends Controller {
   playerStateChanged(state) {
     if (state) {
       this.playingValue = !state.paused;
+
+      // 再生バー連携
+      if (state.position !== undefined && state.duration !== undefined) {
+        if (!this.progressBarDragging) {
+          this.updateProgressBar(state.position, state.duration);
+        }
+      }
+      this.lastPositionMs = state.position;
+      this.lastDurationMs = state.duration;
+    }
+  }
+
+  updateProgressBar(positionMs, durationMs) {
+    if (!this.progressBar || !this.currentTimeLabel || !this.durationLabel) return;
+    this.progressBar.max = durationMs || 1;
+    this.progressBar.value = positionMs || 0;
+    this.currentTimeLabel.textContent = this.formatTime(positionMs);
+    this.durationLabel.textContent = this.formatTime(durationMs);
+  }
+
+  formatTime(ms) {
+    if (!ms || isNaN(ms)) return '0:00';
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  handleSeek(event) {
+    const seekMs = Number(event.target.value);
+    if (window.spotifyPlayer && !isNaN(seekMs)) {
+      window.spotifyPlayer.seek(seekMs);
     }
   }
 
@@ -536,13 +577,7 @@ export default class extends Controller {
     }
   }
 
-  shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
+
 
   /**
    * Handles liking/unliking a track, applying a visual animation.
