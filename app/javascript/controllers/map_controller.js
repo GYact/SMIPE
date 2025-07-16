@@ -356,37 +356,8 @@ export default class extends Controller {
 
 // グローバル関数としてプレイリスト再生機能を追加
 window.playPlaylistFromMap = function(playlistUri, playlistName) {
-  // プレイリストIDをURIから抽出
-  const playlistId = playlistUri.split(':').pop();
-  
-  // プレイリストを選択してプレイヤーに送信
-  fetch('/player/update_selected_playlist', {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-    },
-    body: JSON.stringify({
-      playlist_id: playlistId,
-      playlist_uri: playlistUri
-    })
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('プレイリストの選択に失敗しました');
-    }
-    return response.json();
-  })
-  .then(data => {
-    if (data.status === 'success') {
-      // プレイヤーページに遷移
-      window.location.href = '/player';
-    } else {
-      alert('プレイリストの選択に失敗しました');
-    }
-  })
-  .catch(error => {
-    console.error('エラー:', error);
-    alert('プレイリストの再生に失敗しました');
-  });
+  // プレイヤーページにクエリパラメータで遷移
+  const url = new URL('/player', window.location.origin);
+  url.searchParams.set('uri', playlistUri);
+  window.location.href = url;
 };
