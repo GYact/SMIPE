@@ -421,22 +421,8 @@ export default class extends Controller {
    * @param {string} [direction='up'] - The direction of the animation for skipping.
    */
   handleSkip(event) {
-    // ボタンクリックの場合はイベントオブジェクトが渡されるので、それがない場合はデフォルト値を設定
-    const direction = 'up'; // スキップは常に上スワイプアニメーション
-    this.applyDragEndAnimation(direction); // アニメーションを適用
-
-    this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
-    this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
-    this.playCurrentTrack();
-    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
-    this.updateUpNextDisplay();
-    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
-    if (this.hasSkipButtonTarget) {
-      this.skipButtonTarget.style.color = '#1DB954';
-      setTimeout(() => {
-        this.skipButtonTarget.style.color = '#B3B3B3';
-      }, 500);
-    }
+    // 上スワイプ時と同じ動作
+    this.handleSwipeUp();
   }
 
   /**
@@ -779,7 +765,8 @@ export default class extends Controller {
   }
 
   // DELETEボタンが押されたときに呼び出されるメソッド
-  deleteCurrentTrack() {
-    this.removeFromPlaylist(); // 現在の曲をプレイリストから削除
+  handleDelete() {
+    // 左スワイプ時と同じ動作
+    this.handleSwipeLeft();
   }
 }
