@@ -687,12 +687,10 @@ export default class extends Controller {
         throw new Error(errorData.error?.message || 'Failed to remove track from playlist');
       }
 
-      alert('プレイリストから曲を削除しました。');
       // 削除後、次の曲にスキップ
       this.handleSkip('up'); // 削除後もスキップアニメーションを適用
     } catch (error) {
       console.error('Error removing track from playlist:', error);
-      alert('プレイリストからの曲の削除に失敗しました。');
     }
   }
 
@@ -745,9 +743,10 @@ export default class extends Controller {
         });
 
         this.selectedPlaylistIdValue = playlistId; // Update Stimulus value
-        alert(`プレイリストを「${playlistName}」に変更しました。`);
         // Optionally hide the playlist selection panel after successful selection
         this.togglePlaylistSelection();
+        // ページをリロードして状態を反映
+        window.location.reload();
 
       } catch (error) {
         console.error('Error selecting playlist:', error);
