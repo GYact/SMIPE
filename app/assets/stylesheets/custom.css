@@ -41,3 +41,55 @@
 .login-link:hover {
   background-color: #545454;
 }
+
+/* Added for compact hero */
+.hero-compact .hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.hero-compact .hero-logo {
+  width: 80px; /* Adjust size as needed */
+  height: 80px;
+  margin-bottom: 20px;
+  border-radius: 15px; /* Rounded corners */
+}
+
+.hero-compact .app-title {
+  font-size: 2.5rem; /* Adjust size as needed */
+  margin-bottom: 10px;
+}
+
+.hero-compact .app-tagline {
+  font-size: 1.1rem; /* Adjust size as needed */
+  margin-bottom: 20px;
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 768px) {
+  .hero-compact .app-title {
+    font-size: 2rem !important;
+  }
+
+  .hero-compact .app-tagline {
+    font-size: 1rem !important;
+  }
+
+  .section-title {
+    font-size: 1.5rem !important;
+  }
+
+  .feature-item h3 {
+    font-size: 1.1rem !important;
+  }
+
+  .feature-item p {
+    font-size: 0.9rem !important;
+  }
+
+  footer p {
+    font-size: 0.8rem !important;
+  }
+}
