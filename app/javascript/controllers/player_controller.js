@@ -2,23 +2,42 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel",
-                    "playPauseButton", "shuffleButton", "skipButton", "likeButton",
+                    "playPauseButton", "skipButton", "likeButton",
                     "togglePlaylistSelectionButton", "playlistSelectionPanel", "selectedPlaylistRadios",
-                    "songTitle", "artistName", "upNextItems"]
+                    "songTitle", "artistName", "upNextItems", "deleteButton",
+                    "progressBar", "currentTime", "duration"] // SHUFFLE/REPEATボタンターゲット削除
   static values = { playing: Boolean, token: String, trackUris: Array, selectedPlaylistId: String,
-                     currentIndex: Number, isLiked: Boolean, isShuffled: Boolean, previousTracks: Array }
+                      currentIndex: Number, isLiked: Boolean, previousTracks: Array } // isShuffled削除
 
   connect() {
+    // 再生バーの自動更新（Spotify Playerのイベントが発火しない場合の暫定対応）
+    this.progressInterval = setInterval(async () => {
+      if (window.spotifyPlayer && window.spotifyPlayer.getCurrentState) {
+        const state = await window.spotifyPlayer.getCurrentState();
+        if (state && !this.progressBarDragging) {
+          this.updateProgressBar(state.position, state.duration);
+        }
+      }
+    }, 1000);
+    // 再生バー連携
+    this.progressBar = document.getElementById('progress-bar');
+    this.currentTimeLabel = document.getElementById('current-time');
+    this.durationLabel = document.getElementById('duration');
+    this.progressBar?.addEventListener('input', this.handleSeek.bind(this));
+    this.progressBarDragging = false;
+    this.progressBar?.addEventListener('mousedown', () => { this.progressBarDragging = true; });
+    this.progressBar?.addEventListener('mouseup', () => { this.progressBarDragging = false; });
+    this.lastPositionMs = 0;
     this.touchStartX = 0
     this.touchStartY = 0
     this.isDragging = false
     this.dragDirection = null // 'horizontal' or 'vertical'
     this.setupTouchEvents()
 
-    // 初期データの取得
+    // Initialize data from dataset if available, otherwise set defaults
     this.tokenValue = this.element.dataset.playerToken;
     this.trackUrisValue = JSON.parse(this.element.dataset.playerTrackUris || '[]');
-    this.selectedPlaylistIdValue = this.element.dataset.playerSelectedPlaylistId;
+    this.selectedPlaylistIdValue = this.element.dataset.playerSelectedPlaylistId || null;
     this.currentIndexValue = 0;
     this.isLikedValue = false;
     this.isShuffledValue = false;
@@ -38,36 +57,25 @@ export default class extends Controller {
 
   makePlayable() {
     this.playPauseButtonTarget.disabled = false;
-    // 初期トラックの表示と再生
+    // Initial track display and playback
     if (this.trackUrisValue.length > 0) {
       this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
       this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
       this.updateUpNextDisplay();
-      this.playCurrentTrack(); // コメントアウトを解除
+      this.playCurrentTrack();
     }
   }
 
-  toggleShuffle() {
-    this.isShuffledValue = !this.isShuffledValue;
-    if (this.isShuffledValue) {
-      this.trackUrisValue = this.shuffleArray([...this.trackUrisValue]);
-      this.currentIndexValue = 0; // シャッフルしたら最初の曲から
-      this.playCurrentTrack();
-      this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
-      this.updateUpNextDisplay();
-      this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
-      this.shuffleButtonTarget.style.color = '#1DB954';
-    } else {
-      // シャッフル解除時の処理（元の順序に戻す場合は別途ロジックが必要）
-      // 現状はシャッフルされたままの順序で再生を続ける
-      this.shuffleButtonTarget.style.color = '#B3B3B3';
-    }
-  }
+
 
   disconnect() {
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+    }
     if (window.spotifyPlayer && this.playerStateChanged) {
       window.spotifyPlayer.removeListener('player_state_changed', this.playerStateChanged);
     }
+    // SHUFFLE/REPEAT関連のクリーンアップ不要
   }
 
   togglePlay() {
@@ -82,12 +90,10 @@ export default class extends Controller {
 
   playingValueChanged() {
     if (this.playingValue) {
-      // 再生中の状態
       this.playIconTarget.style.display = 'none';
       this.pauseIconTarget.style.display = 'inline';
       this.playLabelTarget.textContent = 'PAUSE';
     } else {
-      // 停止中の状態
       this.playIconTarget.style.display = 'inline';
       this.pauseIconTarget.style.display = 'none';
       this.playLabelTarget.textContent = 'PLAY';
@@ -103,18 +109,18 @@ export default class extends Controller {
       return;
     }
 
-    // タッチイベントの設定
+    // Touch events
     albumArt.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
     albumArt.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
     albumArt.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
 
-    // マウスイベントの設定（デスクトップ用）
+    // Mouse events (for desktop)
     albumArt.addEventListener('mousedown', this.handleMouseDown.bind(this));
     albumArt.addEventListener('mousemove', this.handleMouseMove.bind(this));
     albumArt.addEventListener('mouseup', this.handleMouseUp.bind(this));
     albumArt.addEventListener('mouseleave', this.handleMouseUp.bind(this));
 
-    // ホバーエフェクトの設定
+    // Hover effects
     albumArt.addEventListener('mouseenter', this.handleMouseEnter.bind(this));
     albumArt.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
   }
@@ -166,12 +172,12 @@ export default class extends Controller {
     const diffX = x - this.touchStartX;
     const diffY = y - this.touchStartY;
 
-    // ドラッグ方向の決定（最初の移動で決定）
+    // Determine drag direction (set on first significant movement)
     if (!this.dragDirection && (Math.abs(diffX) > 10 || Math.abs(diffY) > 10)) {
       this.dragDirection = Math.abs(diffX) > Math.abs(diffY) ? 'horizontal' : 'vertical';
     }
 
-    // ドラッグ方向に応じた移動制限
+    // Restrict movement based on drag direction
     let translateX = 0;
     let translateY = 0;
     let rotation = 0;
@@ -183,12 +189,12 @@ export default class extends Controller {
       translateY = diffY;
     }
 
-    // ドラッグ中の視覚的フィードバック
+    // Visual feedback during drag
     const scale = 1 - Math.min(Math.abs(diffX), Math.abs(diffY)) / 1000;
     this.albumImageTarget.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg) scale(${scale})`;
     this.albumImageTarget.style.opacity = 1 - Math.min(Math.abs(diffX), Math.abs(diffY)) / 300;
 
-    // 方向に応じたカーソルスタイル
+    // Cursor style based on dominant direction
     const dominantDirection = this.getDominantDirection(diffX, diffY);
     this.albumImageTarget.style.cursor = this.getCursorForDirection(dominantDirection);
   }
@@ -224,20 +230,59 @@ export default class extends Controller {
     this.handleDragEnd(e.clientX, e.clientY);
   }
 
+  /**
+   * Applies an animation based on the given direction and then resets.
+   * @param {string} direction - 'left', 'right', 'up', or 'down'.
+   */
+  applyDragEndAnimation(direction) {
+    const albumImage = this.albumImageTarget;
+    albumImage.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+    albumImage.style.opacity = 0; // Start fading out
+
+    let transformValue = '';
+    switch (direction) {
+      case 'left':
+        transformValue = 'translateX(-100%) rotate(-10deg) scale(0.8)';
+        break;
+      case 'right':
+        transformValue = 'translateX(100%) rotate(10deg) scale(0.8)';
+        break;
+      case 'up':
+        transformValue = 'translateY(-100%) scale(0.8)';
+        break;
+      case 'down':
+        transformValue = 'translateY(100%) scale(0.8)';
+        break;
+    }
+    albumImage.style.transform = transformValue;
+
+    // Reset after animation
+    setTimeout(() => {
+      albumImage.style.transition = 'none';
+      albumImage.style.transform = '';
+      albumImage.style.opacity = '';
+      albumImage.style.cursor = 'grab';
+    }, 300); // Match animation duration
+  }
+
   handleDragEnd(x, y) {
     const diffX = x - this.touchStartX;
     const diffY = y - this.touchStartY;
     const minSwipeDistance = 100;
 
-    // アニメーションをリセット
-    this.albumImageTarget.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-    this.albumImageTarget.style.transform = '';
-    this.albumImageTarget.style.opacity = '';
-    this.albumImageTarget.style.cursor = 'grab';
-
+    // Reset animation properties immediately if no swipe
+    if (Math.abs(diffX) <= minSwipeDistance && Math.abs(diffY) <= minSwipeDistance) {
+      this.albumImageTarget.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+      this.albumImageTarget.style.transform = '';
+      this.albumImageTarget.style.opacity = '';
+      this.albumImageTarget.style.cursor = 'grab';
+    }
+    
     if (Math.abs(diffX) > minSwipeDistance || Math.abs(diffY) > minSwipeDistance) {
       const dominantDirection = this.getDominantDirection(diffX, diffY);
       
+      this.applyDragEndAnimation(dominantDirection); // Apply animation based on detected swipe direction
+
       switch (dominantDirection) {
         case 'right':
           this.handleSwipeRight();
@@ -279,6 +324,38 @@ export default class extends Controller {
   playerStateChanged(state) {
     if (state) {
       this.playingValue = !state.paused;
+
+      // 再生バー連携
+      if (state.position !== undefined && state.duration !== undefined) {
+        if (!this.progressBarDragging) {
+          this.updateProgressBar(state.position, state.duration);
+        }
+      }
+      this.lastPositionMs = state.position;
+      this.lastDurationMs = state.duration;
+    }
+  }
+
+  updateProgressBar(positionMs, durationMs) {
+    if (!this.progressBar || !this.currentTimeLabel || !this.durationLabel) return;
+    this.progressBar.max = durationMs || 1;
+    this.progressBar.value = positionMs || 0;
+    this.currentTimeLabel.textContent = this.formatTime(positionMs);
+    this.durationLabel.textContent = this.formatTime(durationMs);
+  }
+
+  formatTime(ms) {
+    if (!ms || isNaN(ms)) return '0:00';
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  handleSeek(event) {
+    const seekMs = Number(event.target.value);
+    if (window.spotifyPlayer && !isNaN(seekMs)) {
+      window.spotifyPlayer.seek(seekMs);
     }
   }
 
@@ -316,9 +393,20 @@ export default class extends Controller {
       body: JSON.stringify({
         uris: [currentTrackUri]
       })
-    }).then(() => {
+    }).then(response => {
+      if (!response.ok) {
+        // Handle non-OK responses, e.g., 403 Forbidden if not premium or other issues
+        response.json().then(errorData => {
+          console.error('Playback start error:', errorData);
+          alert(`再生エラー: ${errorData.error.message || '不明なエラー'}`);
+        }).catch(() => {
+          console.error('Playback start error (no JSON response):', response.statusText);
+          alert('再生エラーが発生しました。');
+        });
+      }
     }).catch(err => {
-      console.error('Playback start error:', err);
+      console.error('Network error during playback start:', err);
+      alert('ネットワークエラーが発生しました。');
     });
   }
 
@@ -369,35 +457,41 @@ export default class extends Controller {
     }
   }
 
-  handleSkip() {
+  /**
+   * Handles the skip action, applying a visual animation.
+   * @param {string} [direction='up'] - The direction of the animation for skipping.
+   */
+  handleSkip(event) {
+    // 上スワイプ時と同じ動作
+    this.handleSwipeUp();
+  }
+
+  /**
+   * Handles the "next track" action, applying a visual animation.
+   * @param {string} [direction='up'] - The direction of the animation for moving to the next track.
+   */
+  handleNext(direction = 'up') {
+    this.applyDragEndAnimation(direction); // Apply animation on button click
+
     this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
     this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
     this.playCurrentTrack();
     this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
     this.updateUpNextDisplay();
     this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
-    if (this.hasSkipButtonTarget) {
-      this.skipButtonTarget.style.color = '#1DB954';
-      setTimeout(() => {
-        this.skipButtonTarget.style.color = '#B3B3B3';
-      }, 500);
-    }
   }
 
-  handleNext() {
-    this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
-    this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
-    this.playCurrentTrack();
-    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
-    this.updateUpNextDisplay();
-    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
-  }
+  /**
+   * Handles the "previous track" action, applying a visual animation.
+   * @param {string} [direction='down'] - The direction of the animation for moving to the previous track.
+   */
+  handlePrevious(direction = 'down') {
+    this.applyDragEndAnimation(direction); // Apply animation on button click
 
-  handlePrevious() {
     if (this.previousTracksValue.length > 0) {
       this.currentIndexValue = this.previousTracksValue.pop();
     } else {
-      // 履歴がない場合は最後の曲に移動
+      // If no history, loop to the last song
       this.currentIndexValue = (this.currentIndexValue - 1 + this.trackUrisValue.length) % this.trackUrisValue.length;
     }
     this.playCurrentTrack();
@@ -483,50 +577,58 @@ export default class extends Controller {
     }
   }
 
-  shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
 
-  handleLike(isAdd) {
-    this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
-    this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
-    this.playCurrentTrack();
-    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
-    this.updateUpNextDisplay();
-    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
-    this.updateLikeButtonUI(); // UI更新はcheckIfTrackIsLiked内で呼ばれるので不要だが、念のため
-  }
 
-  async addToPlaylist(trackUri) {
+  /**
+   * Handles liking/unliking a track, applying a visual animation.
+   * @param {boolean} isAdd - True to like, false to unlike.
+   * @param {string} [direction='right'] - The direction of the animation.
+   */
+  async handleLike(isAdd, direction = 'right') {
+    this.applyDragEndAnimation(direction); // Apply animation on button click
+
+    const currentTrackUri = this.trackUrisValue[this.currentIndexValue];
+    if (!currentTrackUri) return;
+    const trackId = currentTrackUri.split(':').pop();
+
+    const method = isAdd ? 'PUT' : 'DELETE';
+    const endpoint = `https://api.spotify.com/v1/me/tracks?ids=${trackId}`;
+
     try {
-      const selectedPlaylist = this.selectedPlaylistRadiosTarget.querySelector('input[name="selected_playlist"]:checked');
-      if (!selectedPlaylist) {
-        console.error('No playlist selected');
-        return;
-      }
-
-      const playlistId = selectedPlaylist.value;
-      const playlistName = selectedPlaylist.dataset.playlistName;
-
-      // プレイリストの所有者権限を確認
-      const playlistResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+      const response = await fetch(endpoint, {
+        method: method,
         headers: {
-          'Authorization': `Bearer ${this.tokenValue}`
+          'Authorization': `Bearer ${this.tokenValue}`,
+          'Content-Type': 'application/json'
         }
       });
 
-      if (!playlistResponse.ok) {
-        throw new Error('Failed to access playlist');
+      if (!response.ok) {
+        throw new Error('Failed to update like status');
       }
 
-      const playlistData = await playlistResponse.json();
-      
-      // プレイリストが自分のものか確認
-      // より厳密にはサーバーサイドでチェックすべき
+      this.isLikedValue = isAdd; // Update Stimulus value immediately
+      this.updateLikeButtonUI();
+
+      // Optionally move to the next track after liking/unliking
+      // this.handleNext(); // Uncomment if you want to automatically skip after liking/unliking
+
+    } catch (error) {
+      console.error('Error updating like status:', error);
+      alert('「いいね」の更新に失敗しました。');
+    }
+  }
+
+  async addToPlaylist(trackUri) {
+    if (!this.selectedPlaylistIdValue) {
+      alert('プレイリストが選択されていません。');
+      return;
+    }
+    
+    this.applyDragEndAnimation('right'); // Apply animation
+
+    try {
+      const playlistId = this.selectedPlaylistIdValue;
 
       const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
         method: 'POST',
@@ -541,7 +643,7 @@ export default class extends Controller {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // 重複曲の場合はエラーメッセージを表示しない
+        // Do not show error message if song already exists in playlist
         if (errorData.error?.message?.includes('already exists')) {
           this.handleSkip();
           return;
@@ -552,32 +654,57 @@ export default class extends Controller {
       this.handleSkip();
     } catch (error) {
       console.error('Error adding track to playlist:', error);
-      // 重複曲以外のエラーの場合のみアラートを表示
+      // Only alert if it's not the "already exists" error
       if (!error.message?.includes('already exists')) {
         alert('プレイリストへの曲の追加に失敗しました。');
       }
     }
   }
 
-  async removeFromPlaylist(trackUri) {
+  /**
+   * Handles removing the current track from the selected playlist.
+   * This method is called by swipe-left or a dedicated "Delete" button.
+   */
+  async removeFromPlaylist(event) {
+    if (!this.selectedPlaylistIdValue) {
+      alert('プレイリストが選択されていません。');
+      return;
+    }
+
+    // ボタンクリックの場合でも、左スワイプアニメーションを適用
+    this.applyDragEndAnimation('left'); 
+
+    const currentTrackUri = this.trackUrisValue[this.currentIndexValue];
+    if (!currentTrackUri) {
+      console.error('No current track to remove.');
+      return;
+    }
+
     try {
-      const selectedPlaylist = this.selectedPlaylistRadiosTarget.querySelector('input[name="selected_playlist"]:checked');
-      if (!selectedPlaylist) {
-        console.error('No playlist selected');
-        return;
+      const playlistId = this.selectedPlaylistIdValue;
+
+      // プレイリストの所有者権限をチェック
+      // これをクライアントサイドで行うのは推奨されません。
+      // サーバーサイドでの厳密なチェックが必要です。
+      const playlistResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`
+        }
+      });
+
+      if (!playlistResponse.ok) {
+        throw new Error('Failed to access playlist to check ownership');
       }
-
-      const playlistId = selectedPlaylist.value;
-      const playlistName = selectedPlaylist.dataset.playlistName;
-
-      // プレイリストの所有者権限を確認
-      // Note: @spotify_user.id はRails側でしか取得できないため、ここでは簡易的にチェック
-      // より厳密にはサーバーサイドでチェックすべき
-      // if (playlistData.owner.id !== '''<%= @spotify_user.id %>''') {
-      //   console.error('Cannot modify playlist: Not the owner');
+      const playlistData = await playlistResponse.json();
+      
+      // 仮のユーザーIDをここで取得すると仮定
+      // 例えば、HTMLのdata属性に埋め込んでいる場合など
+      // const currentUserId = this.element.dataset.currentSpotifyUserId;
+      // if (playlistData.owner.id !== currentUserId) {
       //   alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
       //   return;
       // }
+
 
       const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
         method: 'DELETE',
@@ -586,7 +713,7 @@ export default class extends Controller {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          tracks: [{ uri: trackUri }]
+          tracks: [{ uri: currentTrackUri }]
         })
       });
 
@@ -595,10 +722,10 @@ export default class extends Controller {
         throw new Error(errorData.error?.message || 'Failed to remove track from playlist');
       }
 
-      this.handleSkip();
+      // 削除後、次の曲にスキップ
+      this.handleSkip('up'); // 削除後もスキップアニメーションを適用
     } catch (error) {
       console.error('Error removing track from playlist:', error);
-      alert('プレイリストからの曲の削除に失敗しました。');
     }
   }
 
@@ -610,13 +737,12 @@ export default class extends Controller {
   }
 
   async handlePlaylistSelectionChange(event) {
-    const selectedPlaylist = event.target;
-    if (selectedPlaylist.checked) {
-      const playlistId = selectedPlaylist.value;
-      const playlistName = selectedPlaylist.dataset.playlistName;
-      
+    const selectedPlaylistRadio = event.target;
+    if (selectedPlaylistRadio.checked) {
+      const playlistId = selectedPlaylistRadio.value;
+      const playlistName = selectedPlaylistRadio.dataset.playlistName; // Make sure you have this dataset attribute on your radio buttons
+
       try {
-        // プレイリストの所有者権限を確認 (クライアントサイドでは簡易的なチェック)
         const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
           headers: {
             'Authorization': `Bearer ${this.tokenValue}`
@@ -628,19 +754,20 @@ export default class extends Controller {
         }
 
         const playlistData = await response.json();
-        
-        // Note: @spotify_user.id はRails側でしか取得できないため、ここでは簡易的にチェック
-        // より厳密にはサーバーサイドでチェックすべき
-        // if (playlistData.owner.id !== '''<%= @spotify_user.id %>''') {
+
+        // Important: For a production app, the ownership check below should primarily be done server-side
+        // to prevent unauthorized client-side modifications. This is a client-side example.
+        // const currentUserId = this.element.dataset.currentSpotifyUserId; // Assuming this is available
+        // if (playlistData.owner.id !== currentUserId) {
         //   alert('このプレイリストは編集できません。自分のプレイリストを選択してください。');
-        //   const previousSelection = this.selectedPlaylistRadiosTarget.querySelector('input[name="selected_playlist"][checked]');
+        //   const previousSelection = this.selectedPlaylistRadiosTarget.querySelector(`input[value="${this.selectedPlaylistIdValue}"]`);
         //   if (previousSelection) {
         //     previousSelection.checked = true;
         //   }
         //   return;
         // }
 
-        // 選択をサーバーに保存
+        // Save the selection to the server
         await fetch('/player/update_selected_playlist', {
           method: 'PATCH',
           headers: {
@@ -650,11 +777,30 @@ export default class extends Controller {
           body: JSON.stringify({ playlist_id: playlistId })
         });
 
-        this.selectedPlaylistIdValue = playlistId; // Stimulus valueを更新
+        this.selectedPlaylistIdValue = playlistId; // Update Stimulus value
+        // Optionally hide the playlist selection panel after successful selection
+        this.togglePlaylistSelection();
+        // ページをリロードして状態を反映
+        window.location.reload();
+
       } catch (error) {
         console.error('Error selecting playlist:', error);
         alert('プレイリストの選択に失敗しました。');
+        // Revert to the previously selected radio button in case of an error
+        const previousSelection = this.selectedPlaylistRadiosTarget.querySelector(`input[value="${this.selectedPlaylistIdValue}"]`);
+        if (previousSelection) {
+          previousSelection.checked = true;
+        } else {
+          // If there was no previous selection, uncheck the current one
+          selectedPlaylistRadio.checked = false;
+        }
       }
     }
+  }
+
+  // DELETEボタンが押されたときに呼び出されるメソッド
+  handleDelete() {
+    // 左スワイプ時と同じ動作
+    this.handleSwipeLeft();
   }
 }

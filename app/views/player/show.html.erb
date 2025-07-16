@@ -9,15 +9,22 @@
                  swipeDown->player#handleSwipeDown">
     <div class="album-art-section" id="album-art-section" data-player-target="albumArt">
       <% if @first_track && @first_track.album && @first_track.album.images.any? %>
-        <%= image_tag @first_track.album.images.first['url'], alt: "Album Art", class: "album-image", data: { player_target: "albumImage" } %>
+        <%= image_tag @first_track.album.images.first['url'], alt: "Album Art", class: "album-image", data: { player_target: "albumImage", action: "click->player#togglePlay" } %>
       <% else %>
-        <%= image_tag "image.png", alt: "Album Art", class: "album-image", data: { player_target: "albumImage" } %>
+        <%= image_tag "image.png", alt: "Album Art", class: "album-image", data: { player_target: "albumImage", action: "click->player#togglePlay" } %>
       <% end %>
 
       <!-- スワイプインジケーター -->
       <div class="swipe-indicator right">
         <i class="fas fa-heart"></i>
       </div>
+
+    <!-- 再生バー（シークバー） -->
+    <div class="player-progress-bar" style="width: 100%; margin: 16px 0 0 0; display: flex; align-items: center; gap: 8px;">
+      <span class="progress-time" id="current-time" style="font-size: 0.9em; color: #B3B3B3; min-width: 40px;">0:00</span>
+      <input type="range" id="progress-bar" class="progress-bar" min="0" max="100" value="0" step="1" style="flex: 1; accent-color: #1DB954; height: 4px; border-radius: 2px;">
+      <span class="progress-time" id="duration" style="font-size: 0.9em; color: #B3B3B3; min-width: 40px;">0:00</span>
+    </div>
       <div class="swipe-indicator left">
         <i class="fas fa-times"></i>
       </div>
@@ -38,7 +45,19 @@
     </div>
 
     <div class="player-actions">
-      <button id="play-pause-btn" class="action-button play-button" data-action="click->player#togglePlay" data-player-target="playPauseButton" disabled>
+      <button class="action-button delete-button" id="delete-button" data-player-target="deleteButton" data-action="click->player#handleDelete">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 3v1H4v2h1v13c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V6h1V4h-5V3H9zm0 5h2v9H9V8zm4 0h2v9h-2V8z"/>
+        </svg>
+        <span>Delete</span>
+      </button>
+      <button class="action-button prev-button" id="prev-button" data-action="click->player#handleSwipeDown">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 18V6h2v12H6zm3.5-6l8.5 6V6l-8.5 6z"/>
+        </svg>
+        <span>Prev</span>
+      </button>
+      <button id="play-pause-btn" class="action-button play-button center" data-action="click->player#togglePlay" data-player-target="playPauseButton" disabled>
         <svg id="play-icon" data-player-target="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M8 5v14l11-7z"/>
         </svg>
@@ -47,25 +66,22 @@
         </svg>
         <span data-player-target="playLabel">PLAY</span>
       </button>
-      <button class="action-button shuffle-button" id="shuffle-button" data-player-target="shuffleButton" data-action="click->player#toggleShuffle">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zM14.83 13.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
-        </svg>
-        <span>Shuffle</span>
-      </button>
       <button class="action-button skip-button" id="skip-button" data-player-target="skipButton" data-action="click->player#handleSkip">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
         </svg>
         <span>Skip</span>
       </button>
-      <button class="action-button like-button" id="like-button" data-player-target="likeButton" data-action="click->player#toggleLike">
+      <!-- プラスボタン（右スワイプと同じ動作） -->
+      <button class="action-button plus-button" id="plus-button" data-action="click->player#handleSwipeRight">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>
+          <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
         </svg>
-        <span>Like</span>
+        <span>Plus</span>
       </button>
     </div>
+
+    <!-- <div class="player-actions-bottom">（SHUFFLE・REPEATボタン削除のため不要）</div> -->
 
     <div class="playlist-selection">
       <button id="toggle-playlist-selection" class="playlist-selection-button" data-player-target="togglePlaylistSelectionButton" data-action="click->player#togglePlaylistSelection">
