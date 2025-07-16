@@ -9,9 +9,9 @@
                  swipeDown->player#handleSwipeDown">
     <div class="album-art-section" id="album-art-section" data-player-target="albumArt">
       <% if @first_track && @first_track.album && @first_track.album.images.any? %>
-        <%= image_tag @first_track.album.images.first['url'], alt: "Album Art", class: "album-image", data: { player_target: "albumImage" } %>
+        <%= image_tag @first_track.album.images.first['url'], alt: "Album Art", class: "album-image", data: { player_target: "albumImage", action: "click->player#togglePlay" } %>
       <% else %>
-        <%= image_tag "image.png", alt: "Album Art", class: "album-image", data: { player_target: "albumImage" } %>
+        <%= image_tag "image.png", alt: "Album Art", class: "album-image", data: { player_target: "albumImage", action: "click->player#togglePlay" } %>
       <% end %>
 
       <!-- スワイプインジケーター -->
