@@ -1,15 +1,19 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel",
-                    "playPauseButton", "skipButton", "likeButton",
-                    "togglePlaylistSelectionButton", "playlistSelectionPanel", "selectedPlaylistRadios",
-                    "songTitle", "artistName", "upNextItems", "deleteButton",
-                    "progressBar", "currentTime", "duration"] // SHUFFLE/REPEATボタンターゲット削除
+static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel",
+                "playPauseButton", "skipButton", "likeButton",
+                "togglePlaylistSelectionButton", "playlistSelectionPanel", "selectedPlaylistRadios",
+                "songTitle", "artistName", "upNextItems", "deleteButton",
+                "progressBar", "currentTime", "duration", "playlistChangingOverlay"] // オーバーレイ追加
   static values = { playing: Boolean, token: String, trackUris: Array, selectedPlaylistId: String,
                       currentIndex: Number, isLiked: Boolean, previousTracks: Array } // isShuffled削除
 
   connect() {
+    // ページロード時にオーバーレイを非表示
+    if (this.hasPlaylistChangingOverlayTarget) {
+      this.playlistChangingOverlayTarget.style.display = 'none';
+    }
     // 再生バーの自動更新（Spotify Playerのイベントが発火しない場合の暫定対応）
     this.progressInterval = setInterval(async () => {
       if (window.spotifyPlayer && window.spotifyPlayer.getCurrentState) {
@@ -752,6 +756,10 @@ export default class extends Controller {
   }
 
   async handlePlaylistSelectionChange(event) {
+    // プレイリスト変更中オーバーレイ表示
+    if (this.hasPlaylistChangingOverlayTarget) {
+      this.playlistChangingOverlayTarget.style.display = 'flex';
+    }
     const selectedPlaylistRadio = event.target;
     if (selectedPlaylistRadio.checked) {
       const playlistId = selectedPlaylistRadio.value;
