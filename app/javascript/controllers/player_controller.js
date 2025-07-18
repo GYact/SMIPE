@@ -644,40 +644,29 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
       alert('プレイリストが選択されていません。');
       return;
     }
-    
-    this.applyDragEndAnimation('right'); // Apply animation
-
+    this.applyDragEndAnimation('right');
     try {
       const playlistId = this.selectedPlaylistIdValue;
-
-      const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+      const response = await fetch('/player/add_track_to_playlist', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.tokenValue}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
         },
-        body: JSON.stringify({
-          uris: [trackUri]
-        })
+        body: JSON.stringify({ playlist_id: playlistId, track_uri: trackUri })
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        // Do not show error message if song already exists in playlist
-        if (errorData.error?.message?.includes('already exists')) {
-          this.handleSkip();
-          return;
-        }
-        throw new Error(errorData.error?.message || 'Failed to add track to playlist');
+      const result = await response.json();
+      if (result.status === 'duplicate') {
+        alert('この曲はすでにプレイリストに追加されています。');
+      } else if (result.status === 'added') {
+        alert('プレイリストに追加しました！');
+        this.handleSkip();
+      } else {
+        alert('追加に失敗しました。');
       }
-
-      this.handleSkip();
     } catch (error) {
-      console.error('Error adding track to playlist:', error);
-      // Only alert if it's not the "already exists" error
-      if (!error.message?.includes('already exists')) {
-        alert('プレイリストへの曲の追加に失敗しました。');
-      }
+      alert('通信エラーが発生しました。');
+      console.error(error);
     }
   }
 
