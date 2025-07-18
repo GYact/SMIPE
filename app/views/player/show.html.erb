@@ -19,12 +19,6 @@
         <i class="fas fa-heart"></i>
       </div>
 
-    <!-- 再生バー（シークバー） -->
-    <div class="player-progress-bar" style="width: 100%; margin: 16px 0 0 0; display: flex; align-items: center; gap: 8px;">
-      <span class="progress-time" id="current-time" style="font-size: 0.9em; color: #B3B3B3; min-width: 40px;">0:00</span>
-      <input type="range" id="progress-bar" class="progress-bar" min="0" max="100" value="0" step="1" style="flex: 1; accent-color: #1DB954; height: 4px; border-radius: 2px;">
-      <span class="progress-time" id="duration" style="font-size: 0.9em; color: #B3B3B3; min-width: 40px;">0:00</span>
-    </div>
       <div class="swipe-indicator left">
         <i class="fas fa-times"></i>
       </div>
@@ -42,6 +36,13 @@
         <p class="song-title" data-player-target="songTitle"><%= @first_track&.name || 'No Track' %></p>
         <p class="artist-name" data-player-target="artistName"><%= @first_track&.artists&.map(&:name)&.join(', ') || 'Unknown Artist' %></p>
       </div>
+    </div>
+
+    <!-- 再生バー（シークバー） -->
+    <div class="player-progress-bar" data-player-target="progressBarContainer" style="width: 300px; margin-top: -20px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+      <span class="progress-time" id="current-time" style="font-size: 0.9em; color: #B3B3B3; min-width: 40px;">0:00</span>
+      <input type="range" id="progress-bar" class="progress-bar" min="0" max="100" value="0" step="1" style="flex: 1; accent-color: #1DB954; height: 4px; border-radius: 2px;">
+      <span class="progress-time" id="duration" style="font-size: 0.9em; color: #B3B3B3; min-width: 40px;">0:00</span>
     </div>
 
     <div class="player-actions">
