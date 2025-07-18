@@ -5,7 +5,7 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
                 "playPauseButton", "skipButton", "likeButton",
                 "togglePlaylistSelectionButton", "playlistSelectionPanel", "selectedPlaylistRadios",
                 "songTitle", "artistName", "upNextItems", "deleteButton",
-                "progressBar", "currentTime", "duration", "playlistChangingOverlay"] // オーバーレイ追加
+                "progressBar", "currentTime", "duration", "playlistChangingOverlay", "progressBarContainer"] // オーバーレイ追加
   static values = { playing: Boolean, token: String, trackUris: Array, selectedPlaylistId: String,
                       currentIndex: Number, isLiked: Boolean, previousTracks: Array } // isShuffled削除
 
@@ -63,9 +63,7 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     this.playPauseButtonTarget.disabled = false;
     // Initial track display and playback
     if (this.trackUrisValue.length > 0) {
-      this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
-      this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
-      this.updateUpNextDisplay();
+      this.updatePlayerUI();
       this.playCurrentTrack();
     }
   }
@@ -140,11 +138,6 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   }
 
   handleTouchStart(e) {
-    // シークバー上ならスワイプ判定を無効化
-    if (e.target === this.progressBar) {
-      this.isDragging = false;
-      return;
-    }
     e.preventDefault();
     this.touchStartX = e.touches[0].clientX;
     this.touchStartY = e.touches[0].clientY;
@@ -164,11 +157,6 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   }
 
   handleTouchMove(e) {
-    // シークバー上ならスワイプ判定を無効化
-    if (e.target === this.progressBar) {
-      this.isDragging = false;
-      return;
-    }
     if (!this.isDragging) return;
     e.preventDefault();
 
@@ -235,11 +223,6 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   }
 
   handleTouchEnd(e) {
-    // シークバー上ならスワイプ判定を無効化
-    if (e.target === this.progressBar) {
-      this.isDragging = false;
-      return;
-    }
     if (!this.isDragging) return;
     this.handleDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
   }
@@ -429,23 +412,40 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     });
   }
 
-  updateCurrentTrackDisplay(trackUri) {
-    const trackId = trackUri.split(':').pop();
-
-    fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
-      headers: {
-        'Authorization': `Bearer ${this.tokenValue}`
+  async fetchTrackData(trackIds) {
+    if (trackIds.length === 0) return [];
+    try {
+      const response = await fetch(`https://api.spotify.com/v1/tracks?ids=${trackIds.join(',')}`, {
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`
+        }
+      });
+      if (!response.ok) {
+        // Handle non-OK responses, e.g., rate limiting
+        if (response.status === 429) {
+          console.warn('Rate limit exceeded. Retrying after delay...');
+          const retryAfter = response.headers.get('Retry-After') || 1;
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+          return this.fetchTrackData(trackIds); // Retry the request
+        }
+        throw new Error(`Failed to fetch track data: ${response.statusText}`);
       }
-    })
-    .then(response => response.json())
-    .then(trackData => {
-      this.albumImageTarget.src = trackData.album.images[0]?.url || '';
-      this.albumImageTarget.alt = trackData.name;
+      const data = await response.json();
+      return data.tracks;
+    } catch (err) {
+      console.error('Error fetching track data:', err);
+      // Avoid showing an alert for every single error to prevent spamming the user
+      // alert('トラック情報の取得に失敗しました。');
+      return [];
+    }
+  }
 
-      this.songTitleTarget.innerText = trackData.name;
-      this.artistNameTarget.innerText = trackData.artists.map(a => a.name).join(', ');
-    })
-    .catch(err => console.error('Error updating current track display:', err));
+  updateCurrentTrackDisplay(trackData) {
+    if (!trackData) return;
+    this.albumImageTarget.src = trackData.album.images[0]?.url || '';
+    this.albumImageTarget.alt = trackData.name;
+    this.songTitleTarget.innerText = trackData.name;
+    this.artistNameTarget.innerText = trackData.artists.map(a => a.name).join(', ');
   }
 
   async checkIfTrackIsLiked(trackUri) {
@@ -494,10 +494,8 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
 
     this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
     this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
+    this.updatePlayerUI();
     this.playCurrentTrack();
-    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
-    this.updateUpNextDisplay();
-    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
   }
 
   /**
@@ -513,86 +511,89 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
       // If no history, loop to the last song
       this.currentIndexValue = (this.currentIndexValue - 1 + this.trackUrisValue.length) % this.trackUrisValue.length;
     }
+    this.updatePlayerUI();
     this.playCurrentTrack();
-    this.updateCurrentTrackDisplay(this.trackUrisValue[this.currentIndexValue]);
-    this.updateUpNextDisplay();
-    this.checkIfTrackIsLiked(this.trackUrisValue[this.currentIndexValue]);
   }
 
-  async updateUpNextDisplay() {
+  updateUpNextDisplay(tracks) {
     if (!this.hasUpNextItemsTarget) return;
     this.upNextItemsTarget.innerHTML = '';
 
+    tracks.forEach((trackData, index) => {
+      if (!trackData) return;
+      const itemDiv = document.createElement('div');
+      itemDiv.classList.add('up-next-item');
+      itemDiv.style.cursor = 'pointer';
+      itemDiv.style.display = 'flex';
+      itemDiv.style.alignItems = 'center';
+      itemDiv.style.padding = '10px';
+      itemDiv.style.borderRadius = '8px';
+      itemDiv.style.transition = 'background-color 0.2s';
+      
+      itemDiv.addEventListener('mouseover', () => {
+        itemDiv.style.backgroundColor = '#282828';
+      });
+      
+      itemDiv.addEventListener('mouseout', () => {
+        itemDiv.style.backgroundColor = 'transparent';
+      });
+      
+      itemDiv.addEventListener('click', () => {
+        this.currentIndexValue = (this.currentIndexValue + index + 1) % this.trackUrisValue.length;
+        this.updatePlayerUI();
+        this.playCurrentTrack();
+      });
+      
+      const img = document.createElement('img');
+      img.src = trackData.album.images[0]?.url || '';
+      img.alt = 'Album Art';
+      img.style.width = '60px';
+      img.style.height = '60px';
+      img.style.borderRadius = '4px';
+      img.style.marginRight = '15px';
+
+      const textDiv = document.createElement('div');
+      textDiv.style.flex = '1';
+
+      const title = document.createElement('p');
+      title.innerText = trackData.name;
+      title.style.margin = '0';
+      title.style.fontWeight = 'bold';
+
+      const artist = document.createElement('p');
+      artist.innerText = trackData.artists.map(a => a.name).join(', ');
+      artist.style.margin = '0';
+      artist.style.color = '#B3B3B3';
+      artist.style.fontSize = '0.9em';
+
+      textDiv.appendChild(title);
+      textDiv.appendChild(artist);
+
+      itemDiv.appendChild(img);
+      itemDiv.appendChild(textDiv);
+
+      this.upNextItemsTarget.appendChild(itemDiv);
+    });
+  }
+
+  async updatePlayerUI() {
+    const currentTrackUri = this.trackUrisValue[this.currentIndexValue];
+    const upNextUris = [];
     for (let i = 1; i <= 3; i++) {
       const nextIndex = (this.currentIndexValue + i) % this.trackUrisValue.length;
-      const trackUri = this.trackUrisValue[nextIndex];
-      const trackId = trackUri.split(':').pop();
+      upNextUris.push(this.trackUrisValue[nextIndex]);
+    }
 
-      try {
-        const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
-          headers: {
-            'Authorization': `Bearer ${this.tokenValue}`
-          }
-        });
-        const trackData = await response.json();
+    const allUris = [currentTrackUri, ...upNextUris];
+    const trackIds = allUris.map(uri => uri.split(':').pop());
 
-        const itemDiv = document.createElement('div');
-        itemDiv.classList.add('up-next-item');
-        itemDiv.style.cursor = 'pointer';
-        itemDiv.style.display = 'flex';
-        itemDiv.style.alignItems = 'center';
-        itemDiv.style.padding = '10px';
-        itemDiv.style.borderRadius = '8px';
-        itemDiv.style.transition = 'background-color 0.2s';
-        
-        itemDiv.addEventListener('mouseover', () => {
-          itemDiv.style.backgroundColor = '#282828';
-        });
-        
-        itemDiv.addEventListener('mouseout', () => {
-          itemDiv.style.backgroundColor = 'transparent';
-        });
-        
-        itemDiv.addEventListener('click', () => {
-          this.currentIndexValue = nextIndex;
-          this.playCurrentTrack();
-          this.updateCurrentTrackDisplay(trackUri);
-          this.updateUpNextDisplay();
-          this.checkIfTrackIsLiked(trackUri);
-        });
-        
-        const img = document.createElement('img');
-        img.src = trackData.album.images[0]?.url || '';
-        img.alt = 'Album Art';
-        img.style.width = '60px';
-        img.style.height = '60px';
-        img.style.borderRadius = '4px';
-        img.style.marginRight = '15px';
+    const trackDataArray = await this.fetchTrackData(trackIds);
 
-        const textDiv = document.createElement('div');
-        textDiv.style.flex = '1';
-
-        const title = document.createElement('p');
-        title.innerText = trackData.name;
-        title.style.margin = '0';
-        title.style.fontWeight = 'bold';
-
-        const artist = document.createElement('p');
-        artist.innerText = trackData.artists.map(a => a.name).join(', ');
-        artist.style.margin = '0';
-        artist.style.color = '#B3B3B3';
-        artist.style.fontSize = '0.9em';
-
-        textDiv.appendChild(title);
-        textDiv.appendChild(artist);
-
-        itemDiv.appendChild(img);
-        itemDiv.appendChild(textDiv);
-
-        this.upNextItemsTarget.appendChild(itemDiv);
-      } catch (err) {
-        console.error('Error updating up next display:', err);
-      }
+    if (trackDataArray.length > 0) {
+      const [currentTrackData, ...upNextTrackData] = trackDataArray;
+      this.updateCurrentTrackDisplay(currentTrackData);
+      this.updateUpNextDisplay(upNextTrackData);
+      this.checkIfTrackIsLiked(currentTrackUri);
     }
   }
 
