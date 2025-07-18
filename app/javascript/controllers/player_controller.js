@@ -136,6 +136,11 @@ export default class extends Controller {
   }
 
   handleTouchStart(e) {
+    // シークバー上ならスワイプ判定を無効化
+    if (e.target === this.progressBar) {
+      this.isDragging = false;
+      return;
+    }
     e.preventDefault();
     this.touchStartX = e.touches[0].clientX;
     this.touchStartY = e.touches[0].clientY;
@@ -155,6 +160,11 @@ export default class extends Controller {
   }
 
   handleTouchMove(e) {
+    // シークバー上ならスワイプ判定を無効化
+    if (e.target === this.progressBar) {
+      this.isDragging = false;
+      return;
+    }
     if (!this.isDragging) return;
     e.preventDefault();
 
@@ -221,6 +231,11 @@ export default class extends Controller {
   }
 
   handleTouchEnd(e) {
+    // シークバー上ならスワイプ判定を無効化
+    if (e.target === this.progressBar) {
+      this.isDragging = false;
+      return;
+    }
     if (!this.isDragging) return;
     this.handleDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
   }
