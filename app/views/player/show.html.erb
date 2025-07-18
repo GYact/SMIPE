@@ -114,6 +114,14 @@
         <!-- Up Next items will be inserted here dynamically -->
       </div>
     </section>
+    
+    <!-- プレイリスト変更中オーバーレイ -->
+    <div id="playlist-changing-overlay" class="playlist-changing-overlay" style="display: none;" data-player-target="playlistChangingOverlay">
+      <div class="overlay-content">
+        <span class="loader"></span>
+        <span>プレイリスト変更中...</span>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -123,6 +131,43 @@
   <div data-controller="spotify-player" data-spotify-player-token-value="<%= @access_token %>"></div>
 
   <style>
+    .playlist-changing-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+    .playlist-changing-overlay .overlay-content {
+      background: #222;
+      padding: 32px 48px;
+      border-radius: 16px;
+      color: #fff;
+      font-size: 1.3em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .playlist-changing-overlay .loader {
+      border: 4px solid #1DB954;
+      border-top: 4px solid #fff;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
     .playlist-selection {
       margin-top: 20px;
       padding: 0 20px;
