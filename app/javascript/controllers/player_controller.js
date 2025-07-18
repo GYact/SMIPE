@@ -38,6 +38,14 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     this.dragDirection = null // 'horizontal' or 'vertical'
     this.setupTouchEvents()
 
+    // アルバム画像タップで再生・停止（スマホ対応）
+    if (this.hasAlbumImageTarget) {
+      this.albumImageTarget.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.togglePlay();
+      });
+    }
+
     // Initialize data from dataset if available, otherwise set defaults
     this.tokenValue = this.element.dataset.playerToken;
     this.trackUrisValue = JSON.parse(this.element.dataset.playerTrackUris || '[]');
