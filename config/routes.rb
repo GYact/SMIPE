@@ -32,4 +32,5 @@ Rails.application.routes.draw do
       get :tracks
     end
   end
+  post '/player/add_track_to_playlist', to: 'player#add_track_to_playlist'
 end

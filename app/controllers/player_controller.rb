@@ -226,6 +226,34 @@ class PlayerController < ApplicationController
     }
   end
 
+  # プレイリストに曲を追加（重複チェック付き）
+  def add_track_to_playlist
+    playlist_id = params[:playlist_id]
+    track_uri = params[:track_uri]
+
+    if playlist_id.blank? || track_uri.blank?
+      render json: { status: 'error', message: 'パラメータが不足しています。' }, status: :bad_request
+      return
+    end
+
+    begin
+      spotify_user = current_user.to_rspotify_user
+      playlist = RSpotify::Playlist.find_by_id(playlist_id)
+
+      existing_uris = playlist.tracks.map(&:uri)
+      if existing_uris.include?(track_uri)
+        render json: { status: 'duplicate' }, status: :ok
+      else
+        track = RSpotify::Track.find(track_uri.split(':').last)
+        playlist.add_tracks!([track])
+        render json: { status: 'added' }, status: :ok
+      end
+    rescue => e
+      Rails.logger.error "エラー: #{e.message}"
+      render json: { status: 'error', message: '曲の追加中にエラーが発生しました。' }, status: :internal_server_error
+    end
+  end
+
   private
 
   def require_login
