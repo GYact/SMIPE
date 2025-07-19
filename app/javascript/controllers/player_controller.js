@@ -341,10 +341,22 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   }
 
   handleSwipeUp() {
+    // 自動スワイプ判定フラグ・タイマーをリセット
+    this._autoSwipeUpTriggered = false;
+    if (this._autoSwipeUpTimeout) {
+      clearTimeout(this._autoSwipeUpTimeout);
+      this._autoSwipeUpTimeout = null;
+    }
     this.handleNext();
   }
 
   handleSwipeDown() {
+    // 自動スワイプ判定フラグ・タイマーをリセット
+    this._autoSwipeUpTriggered = false;
+    if (this._autoSwipeUpTimeout) {
+      clearTimeout(this._autoSwipeUpTimeout);
+      this._autoSwipeUpTimeout = null;
+    }
     this.handlePrevious();
   }
 
@@ -369,6 +381,33 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     this.progressBar.value = positionMs || 0;
     this.currentTimeLabel.textContent = this.formatTime(positionMs);
     this.durationLabel.textContent = this.formatTime(durationMs);
+
+    // positionMs/durationMsが0やundefinedなら何もしない
+    if (!durationMs || !positionMs) return;
+
+    // 曲が切り替わったらフラグ・タイマーをリセット
+    if (this._lastAutoSwipeDuration !== durationMs || this._lastAutoSwipeIndex !== this.currentIndexValue) {
+      this._autoSwipeUpTriggered = false;
+      if (this._autoSwipeUpTimeout) {
+        clearTimeout(this._autoSwipeUpTimeout);
+        this._autoSwipeUpTimeout = null;
+      }
+      this._lastAutoSwipeDuration = durationMs;
+      this._lastAutoSwipeIndex = this.currentIndexValue;
+    }
+
+    // シークバーが終端に到達したら1度だけ1秒後に自動で次の曲へ
+    if (
+      Math.abs(durationMs - positionMs) < 1000 &&
+      !this.progressBarDragging &&
+      !this._autoSwipeUpTriggered
+    ) {
+      this._autoSwipeUpTriggered = true;
+      this._autoSwipeUpTimeout = setTimeout(() => {
+        this.handleSwipeUp();
+        this._autoSwipeUpTimeout = null;
+      }, 1000);
+    }
   }
 
   formatTime(ms) {
