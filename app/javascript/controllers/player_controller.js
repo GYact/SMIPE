@@ -10,6 +10,7 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
                       currentIndex: Number, isLiked: Boolean, previousTracks: Array } // isShuffled削除
 
   connect() {
+    // ...existing code...
     // ページロード時にオーバーレイを非表示
     if (this.hasPlaylistChangingOverlayTarget) {
       this.playlistChangingOverlayTarget.style.display = 'none';
@@ -84,6 +85,15 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     }
     if (window.spotifyPlayer && this.playerStateChanged) {
       window.spotifyPlayer.removeListener('player_state_changed', this.playerStateChanged);
+      // destroyがあれば必ず呼ぶ（Spotify SDKのクリーンアップ）
+      if (typeof window.spotifyPlayer.disconnect === 'function') {
+        window.spotifyPlayer.disconnect();
+      }
+      if (typeof window.spotifyPlayer.destroy === 'function') {
+        window.spotifyPlayer.destroy();
+      }
+      // インスタンスを明示的にnullに
+      window.spotifyPlayer = null;
     }
     // SHUFFLE/REPEAT関連のクリーンアップ不要
   }
