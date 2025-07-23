@@ -134,6 +134,11 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     albumArt.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
     albumArt.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
 
+    // ダブルタップ検出用
+    this.lastTapTime = 0;
+    this.tapTimeout = null;
+    albumArt.addEventListener('touchend', this.handleDoubleTap.bind(this), { passive: false });
+
     // Mouse events (for desktop)
     albumArt.addEventListener('mousedown', this.handleMouseDown.bind(this));
     albumArt.addEventListener('mousemove', this.handleMouseMove.bind(this));
@@ -153,6 +158,91 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   handleMouseLeave() {
     this.albumImageTarget.style.transform = 'scale(1)';
     this.albumImageTarget.style.transition = 'transform 0.3s ease';
+  }
+
+  // ダブルタップでリピート切り替え
+  handleDoubleTap(e) {
+    // シークバー上は無視
+    if (e.target === this.progressBar) return;
+    const now = Date.now();
+    if (this.lastTapTime && (now - this.lastTapTime) < this.constructor.DOUBLE_TAP_DELAY_MS) {
+      // ダブルタップ検出
+      this.lastTapTime = 0;
+      if (this.tapTimeout) {
+        clearTimeout(this.tapTimeout);
+        this.tapTimeout = null;
+      }
+      this.toggleRepeatMode();
+    } else {
+      this.lastTapTime = now;
+      if (this.tapTimeout) clearTimeout(this.tapTimeout);
+      this.tapTimeout = setTimeout(() => {
+        this.lastTapTime = 0;
+      }, DOUBLE_TAP_DELAY);
+    }
+  }
+
+  // Spotifyのリピートモードを切り替える
+  async toggleRepeatMode() {
+    // 現在のリピート状態を取得
+    try {
+      const response = await fetch(SPOTIFY_API_BASE_URL, {
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to get player state');
+      const data = await response.json();
+      let newMode = 'off';
+      if (data.repeat_state === 'off') {
+        newMode = 'track';
+      } else {
+        newMode = 'off';
+      }
+      // リピートモード切り替え
+      const deviceId = await this.getDeviceId();
+      await fetch(`https://api.spotify.com/v1/me/player/repeat?state=${newMode}&device_id=${deviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`
+        }
+      });
+      // UIフィードバック（mdiRepeat/mdiRepeatOffアイコンをおしゃれにオーバーレイ表示）
+const repeatSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='none' stroke='#1DB954' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'>
+  <path d='M17 1l4 4-4 4'/><path d='M3 11V9a4 4 0 0 1 4-4h14'/><path d='M7 23l-4-4 4-4'/><path d='M21 13v2a4 4 0 0 1-4 4H3'/></svg>`;
+const repeatOffSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='none' stroke='#1DB954' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'>
+  <path d='M17 1l4 4-4 4'/><path d='M3 11V9a4 4 0 0 1 4-4h14'/><path d='M7 23l-4-4 4-4'/><path d='M21 13v2a4 4 0 0 1-4 4H3'/><line x1='2' y1='2' x2='22' y2='22' stroke='#F44336' stroke-width='2.2'/></svg>`;
+      const iconHtml = newMode === 'track' ? repeatSvg : repeatOffSvg;
+      const overlay = document.createElement('div');
+      overlay.innerHTML = iconHtml;
+      overlay.style.position = 'absolute';
+      overlay.style.left = '50%';
+      overlay.style.top = '50%';
+      overlay.style.transform = 'translate(-50%, -50%) scale(1)';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.zIndex = '1000';
+      overlay.style.opacity = '0.92';
+      overlay.style.background = 'rgba(30,30,30,0.35)';
+      overlay.style.borderRadius = '50%';
+      overlay.style.backdropFilter = 'blur(6px)';
+      overlay.style.boxShadow = '0 4px 32px 0 rgba(0,0,0,0.18)';
+      overlay.style.padding = '18px';
+      overlay.style.transition = 'opacity 0.35s cubic-bezier(.4,2,.6,1), transform 0.35s cubic-bezier(.4,2,.6,1)';
+      // albumArtTargetの親要素がrelative/absoluteであることを前提
+      const parent = this.albumArtTarget;
+      parent.style.position = parent.style.position || 'relative';
+      parent.appendChild(overlay);
+      setTimeout(() => {
+        overlay.style.opacity = '0';
+        overlay.style.transform = 'translate(-50%, -50%) scale(1.25)';
+        setTimeout(() => {
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 350);
+      }, 350);
+    } catch (err) {
+      console.error('Failed to toggle repeat mode:', err);
+      alert('リピート切り替えに失敗しました');
+    }
   }
 
   handleTouchStart(e) {
@@ -396,8 +486,30 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
       !this._autoSwipeUpTriggered
     ) {
       this._autoSwipeUpTriggered = true;
-      this._autoSwipeUpTimeout = setTimeout(() => {
-        this.handleSwipeUp();
+      this._autoSwipeUpTimeout = setTimeout(async () => {
+        try {
+          // 現在のリピート状態を取得
+          const response = await fetch('https://api.spotify.com/v1/me/player', {
+            headers: {
+              'Authorization': `Bearer ${this.tokenValue}`
+            }
+          });
+          let repeatState = 'off';
+          if (response.ok) {
+            const data = await response.json();
+            repeatState = data.repeat_state;
+          }
+          if (repeatState === 'track') {
+            // 1曲リピート時はアニメーションなしで同じ曲を再生
+            this.playCurrentTrack();
+          } else {
+            // 通常は次の曲へ（アニメーションあり）
+            this.handleSwipeUp();
+          }
+        } catch (e) {
+          // 失敗時は通常通り次の曲へ
+          this.handleSwipeUp();
+        }
         this._autoSwipeUpTimeout = null;
       }, 1000);
     }
