@@ -36,6 +36,24 @@ class LocationsController < ApplicationController
     end
   end
 
+  def reverse_geocode
+    lat = params[:latitude]
+    lng = params[:longitude]
+
+    if lat.blank? || lng.blank?
+      return render json: { error: 'Latitude and longitude are required' }, status: :bad_request
+    end
+
+    results = Geocoder.search([lat, lng])
+    address = results.first&.address
+
+    if address
+      render json: { address: address }
+    else
+      render json: { error: 'Address not found' }, status: :not_found
+    end
+  end
+
   private
 
   def location_params

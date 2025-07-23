@@ -5,6 +5,7 @@ gem "omniauth"
 gem "omniauth-spotify"
 gem "omniauth-rails_csrf_protection"
 gem "rspotify"
+gem "geocoder"
 gem "activerecord-session_store"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
