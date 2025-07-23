@@ -411,11 +411,26 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  handleSeek(event) {
-    const seekMs = Number(event.target.value);
+  // デバウンス関数を定義
+  debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+  }
+
+  // handleSeek をデバウンス化
+  debouncedSeek = this.debounce((seekMs) => {
     if (window.spotifyPlayer && !isNaN(seekMs)) {
       window.spotifyPlayer.seek(seekMs);
     }
+  }, 300); // 300ms のデバウンス
+
+  handleSeek(event) {
+    const seekMs = Number(event.target.value);
+    this.debouncedSeek(seekMs);
   }
 
   // Helper to wait for device ID
