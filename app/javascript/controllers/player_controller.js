@@ -188,7 +188,7 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   async toggleRepeatMode() {
     // 現在のリピート状態を取得
     try {
-      const response = await fetch('https://api.spotify.com/v1/me/player', {
+      const response = await fetch(SPOTIFY_API_BASE_URL, {
         headers: {
           'Authorization': `Bearer ${this.tokenValue}`
         }
