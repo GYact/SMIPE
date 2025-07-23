@@ -134,10 +134,11 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     albumArt.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
     albumArt.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
 
-    // ダブルタップ検出用
+    // ダブルタップ/ダブルクリック検出用
     this.lastTapTime = 0;
     this.tapTimeout = null;
-    albumArt.addEventListener('touchend', this.handleDoubleTap.bind(this), { passive: false });
+    albumArt.addEventListener('touchend', this.handleDoubleTapOrClick.bind(this), { passive: false });
+    albumArt.addEventListener('dblclick', this.handleDoubleTapOrClick.bind(this), { passive: false });
 
     // Mouse events (for desktop)
     albumArt.addEventListener('mousedown', this.handleMouseDown.bind(this));
@@ -160,12 +161,17 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     this.albumImageTarget.style.transition = 'transform 0.3s ease';
   }
 
-  // ダブルタップでリピート切り替え
-  handleDoubleTap(e) {
+  // ダブルタップまたはダブルクリックでリピート切り替え
+  handleDoubleTapOrClick(e) {
     // シークバー上は無視
     if (e.target === this.progressBar) return;
+    if (e.type === 'dblclick') {
+      this.toggleRepeatMode();
+      return;
+    }
+    // touchend（ダブルタップ）
     const now = Date.now();
-    if (this.lastTapTime && (now - this.lastTapTime) < this.constructor.DOUBLE_TAP_DELAY_MS) {
+    if (this.lastTapTime && (now - this.lastTapTime) < 350) {
       // ダブルタップ検出
       this.lastTapTime = 0;
       if (this.tapTimeout) {
@@ -178,7 +184,7 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
       if (this.tapTimeout) clearTimeout(this.tapTimeout);
       this.tapTimeout = setTimeout(() => {
         this.lastTapTime = 0;
-      }, DOUBLE_TAP_DELAY);
+      }, 350);
     }
   }
 
@@ -186,7 +192,7 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   async toggleRepeatMode() {
     // 現在のリピート状態を取得
     try {
-      const response = await fetch(SPOTIFY_API_BASE_URL, {
+      const response = await fetch('https://api.spotify.com/v1/me/player', {
         headers: {
           'Authorization': `Bearer ${this.tokenValue}`
         }
