@@ -167,8 +167,7 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     // シークバー上は無視
     if (e.target === this.progressBar) return;
     const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300; // ms
-    if (this.lastTapTime && (now - this.lastTapTime) < DOUBLE_TAP_DELAY) {
+    if (this.lastTapTime && (now - this.lastTapTime) < this.constructor.DOUBLE_TAP_DELAY_MS) {
       // ダブルタップ検出
       this.lastTapTime = 0;
       if (this.tapTimeout) {
