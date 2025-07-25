@@ -18,6 +18,12 @@ class MapsController < ApplicationController
       }
     end
 
+    # 緯度経度から住所を取得
+    if @user_location[:latitude].present? && @user_location[:longitude].present?
+      results = Geocoder.search([@user_location[:latitude], @user_location[:longitude]])
+      @user_location[:address] = results.first.address if results.first
+    end
+
     # Spotifyプレイリストの取得
     if logged_in? && current_user.access_token.present?
       begin

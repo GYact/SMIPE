@@ -5,11 +5,18 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
                 "playPauseButton", "skipButton", "likeButton",
                 "togglePlaylistSelectionButton", "playlistSelectionPanel", "selectedPlaylistRadios",
                 "songTitle", "artistName", "upNextItems", "deleteButton",
-                "progressBar", "currentTime", "duration", "playlistChangingOverlay", "progressBarContainer"] // オーバーレイ追加
+                "progressBar", "currentTime", "duration", "playlistChangingOverlay", "progressBarContainer",
+                "shuffleButton"] // shuffleButtonTarget追加
   static values = { playing: Boolean, token: String, trackUris: Array, selectedPlaylistId: String,
-                      currentIndex: Number, isLiked: Boolean, previousTracks: Array } // isShuffled削除
+                      currentIndex: Number, isLiked: Boolean, previousTracks: Array, isShuffled: Boolean }
 
   connect() {
+    // ...existing code...
+    // シャッフルボタンイベント
+    if (this.hasShuffleButtonTarget) {
+      this.shuffleButtonTarget.addEventListener('click', this.toggleShuffleMode.bind(this));
+      this.updateShuffleButtonUI();
+    }
     // ページロード時にオーバーレイを非表示
     if (this.hasPlaylistChangingOverlayTarget) {
       this.playlistChangingOverlayTarget.style.display = 'none';
@@ -38,13 +45,22 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     this.dragDirection = null // 'horizontal' or 'vertical'
     this.setupTouchEvents()
 
+    // アルバム画像タップで再生・停止（スマホ対応）
+    if (this.hasAlbumImageTarget) {
+      this.albumImageTarget.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.togglePlay();
+      });
+    }
+
     // Initialize data from dataset if available, otherwise set defaults
     this.tokenValue = this.element.dataset.playerToken;
     this.trackUrisValue = JSON.parse(this.element.dataset.playerTrackUris || '[]');
     this.selectedPlaylistIdValue = this.element.dataset.playerSelectedPlaylistId || null;
     this.currentIndexValue = 0;
     this.isLikedValue = false;
-    this.isShuffledValue = false;
+    // isShuffledValueはStimulus valuesで管理
+    if (typeof this.isShuffledValue === 'undefined') this.isShuffledValue = false;
     this.previousTracksValue = [];
 
     this.playerStateChanged = this.playerStateChanged.bind(this);
@@ -76,6 +92,15 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     }
     if (window.spotifyPlayer && this.playerStateChanged) {
       window.spotifyPlayer.removeListener('player_state_changed', this.playerStateChanged);
+      // destroyがあれば必ず呼ぶ（Spotify SDKのクリーンアップ）
+      if (typeof window.spotifyPlayer.disconnect === 'function') {
+        window.spotifyPlayer.disconnect();
+      }
+      if (typeof window.spotifyPlayer.destroy === 'function') {
+        window.spotifyPlayer.destroy();
+      }
+      // インスタンスを明示的にnullに
+      window.spotifyPlayer = null;
     }
     // SHUFFLE/REPEAT関連のクリーンアップ不要
   }
@@ -116,6 +141,19 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     albumArt.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
     albumArt.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
 
+    // 長押しでシャッフル切り替え
+    albumArt.addEventListener('touchstart', this.handleLongPressStart.bind(this), { passive: false });
+    albumArt.addEventListener('touchend', this.handleLongPressEnd.bind(this), { passive: false });
+    albumArt.addEventListener('mousedown', this.handleLongPressStart.bind(this));
+    albumArt.addEventListener('mouseup', this.handleLongPressEnd.bind(this));
+    albumArt.addEventListener('mouseleave', this.handleLongPressEnd.bind(this));
+
+    // ダブルタップ/ダブルクリック検出用
+    this.lastTapTime = 0;
+    this.tapTimeout = null;
+    albumArt.addEventListener('touchend', this.handleDoubleTapOrClick.bind(this), { passive: false });
+    albumArt.addEventListener('dblclick', this.handleDoubleTapOrClick.bind(this), { passive: false });
+
     // Mouse events (for desktop)
     albumArt.addEventListener('mousedown', this.handleMouseDown.bind(this));
     albumArt.addEventListener('mousemove', this.handleMouseMove.bind(this));
@@ -135,6 +173,161 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   handleMouseLeave() {
     this.albumImageTarget.style.transform = 'scale(1)';
     this.albumImageTarget.style.transition = 'transform 0.3s ease';
+  }
+
+  // 長押し判定用
+  handleLongPressStart(e) {
+    // 既存のドラッグやダブルタップと干渉しないように
+    if (e.type === 'touchstart' && e.touches.length > 1) return;
+    this._longPressTimer = setTimeout(() => {
+      this.toggleShuffleMode();
+      this.handleNext('up'); // シャッフルON後、即ランダム曲へ
+      this._longPressTimer = null;
+    }, 700); // 700ms以上でシャッフル
+  }
+
+  handleLongPressEnd(e) {
+    if (this._longPressTimer) {
+      clearTimeout(this._longPressTimer);
+      this._longPressTimer = null;
+    }
+  }
+
+  // シャッフル切り替え
+  toggleShuffleMode() {
+    this.isShuffledValue = !this.isShuffledValue;
+    this.updateShuffleButtonUI();
+    // Spotify APIにも反映（必要なら）
+    // UIフィードバック
+    const overlay = document.createElement('div');
+    overlay.innerHTML = this.isShuffledValue
+      ? `<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='none' stroke='#1DB954' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M16 3h5v5'/><path d='M4 20l16-16'/><path d='M4 4l16 16'/></svg>`
+      : `<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='none' stroke='#B3B3B3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M16 3h5v5'/><path d='M4 20l16-16'/><path d='M4 4l16 16'/></svg>`;
+    overlay.style.position = 'absolute';
+    overlay.style.left = '50%';
+    overlay.style.top = '50%';
+    overlay.style.transform = 'translate(-50%, -50%) scale(1)';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.zIndex = '1000';
+    overlay.style.opacity = '0.92';
+    overlay.style.background = 'rgba(30,30,30,0.35)';
+    overlay.style.borderRadius = '50%';
+    overlay.style.backdropFilter = 'blur(6px)';
+    overlay.style.boxShadow = '0 4px 32px 0 rgba(0,0,0,0.18)';
+    overlay.style.padding = '18px';
+    overlay.style.transition = 'opacity 0.35s cubic-bezier(.4,2,.6,1), transform 0.35s cubic-bezier(.4,2,.6,1)';
+    const parent = this.albumArtTarget;
+    parent.style.position = parent.style.position || 'relative';
+    parent.appendChild(overlay);
+    setTimeout(() => {
+      overlay.style.opacity = '0';
+      overlay.style.transform = 'translate(-50%, -50%) scale(1.25)';
+      setTimeout(() => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      }, 350);
+    }, 350);
+  }
+
+  updateShuffleButtonUI() {
+    if (this.hasShuffleButtonTarget) {
+      if (this.isShuffledValue) {
+        this.shuffleButtonTarget.classList.add('active');
+        this.shuffleButtonTarget.style.color = '#1DB954';
+      } else {
+        this.shuffleButtonTarget.classList.remove('active');
+        this.shuffleButtonTarget.style.color = '#B3B3B3';
+      }
+    }
+  }
+
+  // ダブルタップまたはダブルクリックでリピート切り替え
+  handleDoubleTapOrClick(e) {
+    // シークバー上は無視
+    if (e.target === this.progressBar) return;
+    if (e.type === 'dblclick') {
+      this.toggleRepeatMode();
+      return;
+    }
+    // touchend（ダブルタップ）
+    const now = Date.now();
+    if (this.lastTapTime && (now - this.lastTapTime) < 350) {
+      // ダブルタップ検出
+      this.lastTapTime = 0;
+      if (this.tapTimeout) {
+        clearTimeout(this.tapTimeout);
+        this.tapTimeout = null;
+      }
+      this.toggleRepeatMode();
+    } else {
+      this.lastTapTime = now;
+      if (this.tapTimeout) clearTimeout(this.tapTimeout);
+      this.tapTimeout = setTimeout(() => {
+        this.lastTapTime = 0;
+      }, 350);
+    }
+  }
+
+  // Spotifyのリピートモードを切り替える
+  async toggleRepeatMode() {
+    // 現在のリピート状態を取得
+    try {
+      const response = await fetch('https://api.spotify.com/v1/me/player', {
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to get player state');
+      const data = await response.json();
+      let newMode = 'off';
+      if (data.repeat_state === 'off') {
+        newMode = 'track';
+      } else {
+        newMode = 'off';
+      }
+      // リピートモード切り替え
+      const deviceId = await this.getDeviceId();
+      await fetch(`https://api.spotify.com/v1/me/player/repeat?state=${newMode}&device_id=${deviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.tokenValue}`
+        }
+      });
+      // UIフィードバック（mdiRepeat/mdiRepeatOffアイコンをおしゃれにオーバーレイ表示）
+const repeatSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='none' stroke='#1DB954' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'>
+  <path d='M17 1l4 4-4 4'/><path d='M3 11V9a4 4 0 0 1 4-4h14'/><path d='M7 23l-4-4 4-4'/><path d='M21 13v2a4 4 0 0 1-4 4H3'/></svg>`;
+const repeatOffSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 24 24' fill='none' stroke='#1DB954' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'>
+  <path d='M17 1l4 4-4 4'/><path d='M3 11V9a4 4 0 0 1 4-4h14'/><path d='M7 23l-4-4 4-4'/><path d='M21 13v2a4 4 0 0 1-4 4H3'/><line x1='2' y1='2' x2='22' y2='22' stroke='#F44336' stroke-width='2.2'/></svg>`;
+      const iconHtml = newMode === 'track' ? repeatSvg : repeatOffSvg;
+      const overlay = document.createElement('div');
+      overlay.innerHTML = iconHtml;
+      overlay.style.position = 'absolute';
+      overlay.style.left = '50%';
+      overlay.style.top = '50%';
+      overlay.style.transform = 'translate(-50%, -50%) scale(1)';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.zIndex = '1000';
+      overlay.style.opacity = '0.92';
+      overlay.style.background = 'rgba(30,30,30,0.35)';
+      overlay.style.borderRadius = '50%';
+      overlay.style.backdropFilter = 'blur(6px)';
+      overlay.style.boxShadow = '0 4px 32px 0 rgba(0,0,0,0.18)';
+      overlay.style.padding = '18px';
+      overlay.style.transition = 'opacity 0.35s cubic-bezier(.4,2,.6,1), transform 0.35s cubic-bezier(.4,2,.6,1)';
+      // albumArtTargetの親要素がrelative/absoluteであることを前提
+      const parent = this.albumArtTarget;
+      parent.style.position = parent.style.position || 'relative';
+      parent.appendChild(overlay);
+      setTimeout(() => {
+        overlay.style.opacity = '0';
+        overlay.style.transform = 'translate(-50%, -50%) scale(1.25)';
+        setTimeout(() => {
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, 350);
+      }, 350);
+    } catch (err) {
+      console.error('Failed to toggle repeat mode:', err);
+      alert('リピート切り替えに失敗しました');
+    }
   }
 
   handleTouchStart(e) {
@@ -316,10 +509,22 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
   }
 
   handleSwipeUp() {
+    // 自動スワイプ判定フラグ・タイマーをリセット
+    this._autoSwipeUpTriggered = false;
+    if (this._autoSwipeUpTimeout) {
+      clearTimeout(this._autoSwipeUpTimeout);
+      this._autoSwipeUpTimeout = null;
+    }
     this.handleNext();
   }
 
   handleSwipeDown() {
+    // 自動スワイプ判定フラグ・タイマーをリセット
+    this._autoSwipeUpTriggered = false;
+    if (this._autoSwipeUpTimeout) {
+      clearTimeout(this._autoSwipeUpTimeout);
+      this._autoSwipeUpTimeout = null;
+    }
     this.handlePrevious();
   }
 
@@ -344,6 +549,55 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     this.progressBar.value = positionMs || 0;
     this.currentTimeLabel.textContent = this.formatTime(positionMs);
     this.durationLabel.textContent = this.formatTime(durationMs);
+
+    // positionMs/durationMsが0やundefinedなら何もしない
+    if (!durationMs || !positionMs) return;
+
+    // 曲が切り替わったらフラグ・タイマーをリセット
+    if (this._lastAutoSwipeDuration !== durationMs || this._lastAutoSwipeIndex !== this.currentIndexValue) {
+      this._autoSwipeUpTriggered = false;
+      if (this._autoSwipeUpTimeout) {
+        clearTimeout(this._autoSwipeUpTimeout);
+        this._autoSwipeUpTimeout = null;
+      }
+      this._lastAutoSwipeDuration = durationMs;
+      this._lastAutoSwipeIndex = this.currentIndexValue;
+    }
+
+    // シークバーが終端に到達したら1度だけ1秒後に自動で次の曲へ
+    if (
+      Math.abs(durationMs - positionMs) < 1000 &&
+      !this.progressBarDragging &&
+      !this._autoSwipeUpTriggered
+    ) {
+      this._autoSwipeUpTriggered = true;
+      this._autoSwipeUpTimeout = setTimeout(async () => {
+        try {
+          // 現在のリピート状態を取得
+          const response = await fetch('https://api.spotify.com/v1/me/player', {
+            headers: {
+              'Authorization': `Bearer ${this.tokenValue}`
+            }
+          });
+          let repeatState = 'off';
+          if (response.ok) {
+            const data = await response.json();
+            repeatState = data.repeat_state;
+          }
+          if (repeatState === 'track') {
+            // 1曲リピート時はアニメーションなしで同じ曲を再生
+            this.playCurrentTrack();
+          } else {
+            // 通常は次の曲へ（アニメーションあり）
+            this.handleSwipeUp();
+          }
+        } catch (e) {
+          // 失敗時は通常通り次の曲へ
+          this.handleSwipeUp();
+        }
+        this._autoSwipeUpTimeout = null;
+      }, 1000);
+    }
   }
 
   formatTime(ms) {
@@ -354,11 +608,26 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
-  handleSeek(event) {
-    const seekMs = Number(event.target.value);
+  // デバウンス関数を定義
+  debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+  }
+
+  // handleSeek をデバウンス化
+  debouncedSeek = this.debounce((seekMs) => {
     if (window.spotifyPlayer && !isNaN(seekMs)) {
       window.spotifyPlayer.seek(seekMs);
     }
+  }, 300); // 300ms のデバウンス
+
+  handleSeek(event) {
+    const seekMs = Number(event.target.value);
+    this.debouncedSeek(seekMs);
   }
 
   // Helper to wait for device ID
@@ -493,7 +762,15 @@ static targets = ["albumArt", "albumImage", "playIcon", "pauseIcon", "playLabel"
     this.applyDragEndAnimation(direction); // Apply animation on button click
 
     this.previousTracksValue = [...this.previousTracksValue, this.currentIndexValue];
-    this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
+    if (this.isShuffledValue && this.trackUrisValue.length > 1) {
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * this.trackUrisValue.length);
+      } while (nextIndex === this.currentIndexValue);
+      this.currentIndexValue = nextIndex;
+    } else {
+      this.currentIndexValue = (this.currentIndexValue + 1) % this.trackUrisValue.length;
+    }
     this.updatePlayerUI();
     this.playCurrentTrack();
   }

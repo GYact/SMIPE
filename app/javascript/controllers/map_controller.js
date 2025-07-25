@@ -51,7 +51,7 @@ export default class extends Controller {
         const longitude = position.coords.longitude;
         const accuracy = position.coords.accuracy;
 
-        this.updateLocationDisplay(latitude, longitude, accuracy);
+        
         this.sendLocationToServer(latitude, longitude);
 
         this.map.setView([latitude, longitude], 15);
@@ -70,11 +70,24 @@ export default class extends Controller {
         this.marker = L.marker([latitude, longitude], { icon: currentLocationIcon }).addTo(this.map)
           .bindPopup(`
             <div>
-              <strong>現在位置</strong><br>
-              緯度: ${latitude.toFixed(6)}<br>
-              経度: ${longitude.toFixed(6)}
+              <strong>登録位置</strong><br>
+              <span class="address-loading">住所を取得中...</span>
             </div>
           `).openPopup();
+
+        // 住所を取得してポップアップを更新
+        fetch(`/locations/reverse_geocode?latitude=${latitude}&longitude=${longitude}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.address) {
+              this.marker.getPopup().setContent(`
+                <div>
+                  <strong>現在位置</strong><br>
+                  ${data.address}
+                </div>
+              `);
+            }
+          });
 
         this.userLocationValue = {
           latitude: latitude,
@@ -151,20 +164,7 @@ export default class extends Controller {
     });
   }
 
-  updateLocationDisplay(lat, lng, accuracy) {
-    if (this.hasLocationDisplayTarget) {
-      this.locationDisplayTarget.innerHTML = `
-        <div class="coordinates">
-          <strong>緯度:</strong> ${lat.toFixed(4)}<br>
-          <strong>経度:</strong> ${lng.toFixed(4)}<br>
-          <strong>精度:</strong> ${Math.round(accuracy)}m
-        </div>
-        <div style="margin-top: 10px; font-size: 12px; color: #666;">
-          最終更新: ${new Date().toLocaleString('ja-JP')}
-        </div>
-      `;
-    }
-  }
+  
 
   showStatus(message, type) {
     if (this.hasStatusMessageTarget) {
@@ -203,14 +203,7 @@ export default class extends Controller {
     const playlistName = location.name || 'プレイリスト名不明';
     const playlistImage = location.playlist_image || null;
     
-    // デバッグ情報をコンソールに出力
-    console.log('Adding playlist marker:', {
-      name: location.name,
-      playlistName: playlistName,
-      userNickname: userNickname,
-      uri: location.uri,
-      playlistImage: playlistImage
-    });
+    
     
     // カスタムアイコン
     let markerOptions = {};
