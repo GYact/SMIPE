@@ -231,7 +231,7 @@ export default class extends Controller {
           ${userImage ? `<img src="${userImage}" alt="${userNickname}" class="user-avatar" style="width:32px;height:32px;border-radius:50%;margin-right:8px;">` : ''}
           <span>保存者: ${userNickname}</span>
         </div>
-        ${comment ? `<div class="playlist-comment" style="margin-top:10px;"><strong>コメント:</strong> ${comment}</div>` : ''}
+        ${comment ? `<div class="playlist-comment" style="margin-top:10px;"> ${comment}</div>` : ''}
         ${postedImage ? `<div class="playlist-posted-image" style="margin-top:10px;"><img src="${postedImage}" alt="投稿画像" style="max-width:100%;max-height:120px;border-radius:8px;"></div>` : ''}
         <div class="playlist-actions" style="margin-top: 15px;">
           <button class="play-playlist-btn" onclick="window.playPlaylistFromMap('${location.uri}', '${location.name}')" style="
