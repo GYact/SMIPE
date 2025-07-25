@@ -1,7 +1,7 @@
 class PlaylistLocation < ApplicationRecord
   belongs_to :user
   
-  validates :name, :uri, :latitude, :longitude, :location_name, presence: true
+  validates :name, :uri, :latitude, :longitude, presence: true
   
   validates :latitude, numericality: { 
     greater_than_or_equal_to: -90, 

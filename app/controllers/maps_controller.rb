@@ -6,8 +6,7 @@ class MapsController < ApplicationController
     @user_location = if current_user.has_location?
       {
         latitude: current_user.latitude,
-        longitude: current_user.longitude,
-        location_name: current_user.location_name
+        longitude: current_user.longitude
       }
     else
       # 緯度・経度がnilの場合でも、@user_location自体はハッシュとして存在させる
