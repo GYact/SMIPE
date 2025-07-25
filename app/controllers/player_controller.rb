@@ -153,6 +153,9 @@ class PlayerController < ApplicationController
     latitude = params[:latitude]
     longitude = params[:longitude]
     location_name = params[:location_name]
+    comment = params[:comment]
+    first_track_uri = params[:first_track_uri]
+    image = params[:image]
 
     if name.blank? || uri.blank?
       render json: { status: 'error', message: 'プレイリスト情報が不足しています。' }, status: :unprocessable_entity
@@ -170,8 +173,11 @@ class PlayerController < ApplicationController
         uri: uri,
         latitude: latitude,
         longitude: longitude,
-        location_name: location_name
+        location_name: location_name,
+        comment: comment,
+        first_track_uri: first_track_uri
       )
+      playlist.image.attach(image) if image.present?
 
       if playlist.save
         render json: { status: 'success', message: "プレイリスト「#{name}」を保存しました" }
@@ -221,7 +227,10 @@ class PlayerController < ApplicationController
         created_at: location.created_at,
         user_nickname: location.user&.name || location.user&.nickname || "不明なユーザー",
         user_image: location.user&.image,
-        playlist_image: playlist_images[playlist_id]
+        playlist_image: playlist_images[playlist_id],
+        comment: location.comment,
+        image_url: location.image.attached? ? url_for(location.image) : nil,
+        first_track_uri: location.first_track_uri
       }
     }
   end

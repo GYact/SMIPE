@@ -204,9 +204,10 @@ export default class extends Controller {
     const userImage = location.user_image || '';
     const playlistName = location.name || 'プレイリスト名不明';
     const playlistImage = location.playlist_image || null;
-    
-    
-    
+    const comment = location.comment || '';
+    const postedImage = location.image_url || null;
+    const firstTrackUri = location.first_track_uri || null;
+
     // カスタムアイコン
     let markerOptions = {};
     if (playlistImage) {
@@ -218,39 +219,43 @@ export default class extends Controller {
         className: 'playlist-leaflet-icon'
       });
     }
-    
-    const marker = L.marker([location.latitude, location.longitude], markerOptions)
-      .bindPopup(`
-        <div class="playlist-marker-popup">
-          <div style="font-weight:bold; color:#1DB954; font-size:16px; margin-bottom:4px;">
-            プレイリスト名: ${playlistName}
-          </div>
-          <p>場所: ${location.location_name}</p>
-          <p>保存日時: ${new Date(location.created_at).toLocaleString('ja-JP')}</p>
-          <div class="user-info">
-            ${userImage ? `<img src="${userImage}" alt="${userNickname}" class="user-avatar" style="width:32px;height:32px;border-radius:50%;margin-right:8px;">` : ''}
-            <span>保存者: ${userNickname}</span>
-          </div>
-          <div class="playlist-actions" style="margin-top: 15px;">
-            <button class="play-playlist-btn" onclick="window.playPlaylistFromMap('${location.uri}', '${location.name}')" style="
-              background: #1DB954;
-              color: white;
-              border: none;
-              padding: 8px 16px;
-              border-radius: 20px;
-              cursor: pointer;
-              font-size: 14px;
-              font-weight: bold;
-              display: flex;
-              align-items: center;
-              gap: 5px;
-            ">
-              <i class="fas fa-play" style="font-size: 12px;"></i>
-              再生
-            </button>
-          </div>
+
+    let popupHtml = `
+      <div class="playlist-marker-popup">
+        <div style="font-weight:bold; color:#1DB954; font-size:16px; margin-bottom:4px;">
+          プレイリスト名: ${playlistName}
         </div>
-      `);
+        <p>場所: ${location.location_name}</p>
+        <p>保存日時: ${new Date(location.created_at).toLocaleString('ja-JP')}</p>
+        <div class="user-info">
+          ${userImage ? `<img src="${userImage}" alt="${userNickname}" class="user-avatar" style="width:32px;height:32px;border-radius:50%;margin-right:8px;">` : ''}
+          <span>保存者: ${userNickname}</span>
+        </div>
+        ${comment ? `<div class="playlist-comment" style="margin-top:10px;"> ${comment}</div>` : ''}
+        ${postedImage ? `<div class="playlist-posted-image" style="margin-top:10px;"><img src="${postedImage}" alt="投稿画像" style="max-width:100%;max-height:120px;border-radius:8px;"></div>` : ''}
+        <div class="playlist-actions" style="margin-top: 15px;">
+          <button class="play-playlist-btn" onclick="window.playPlaylistFromMap('${location.uri}', '${location.name}')" style="
+            background: #1DB954;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          ">
+            <i class="fas fa-play" style="font-size: 12px;"></i>
+            再生
+          </button>
+        </div>
+        ${firstTrackUri ? `<div style=\"margin-top:10px;\"><button class=\"demo-track-btn\" onclick=\"window.playDemoTrack('${firstTrackUri}')\" style=\"background:#1DB954;color:white;border:none;padding:6px 12px;border-radius:16px;cursor:pointer;font-size:13px;\">一曲目デモ再生</button></div>` : ''}
+      </div>
+    `;
+    const marker = L.marker([location.latitude, location.longitude], markerOptions)
+      .bindPopup(popupHtml);
     marker.addTo(this.map);
     this.playlistMarkers.push(marker);
   }
@@ -267,6 +272,12 @@ export default class extends Controller {
     const selectedUri = playlistSelect.value;
     const selectedOption = playlistSelect.options[playlistSelect.selectedIndex];
     const selectedName = selectedOption.getAttribute('data-name');
+
+    // コメント欄と画像欄を取得
+    const commentInput = document.getElementById('playlist-comment');
+    const imageInput = document.getElementById('playlist-image');
+    const comment = commentInput ? commentInput.value : '';
+    const imageFile = imageInput && imageInput.files.length > 0 ? imageInput.files[0] : null;
 
     if (!selectedUri) {
       this.showStatus("プレイリストを選択してください", "error");
@@ -299,20 +310,23 @@ export default class extends Controller {
       saveButton.textContent = '保存中...';
     }
 
+    // 画像アップロード対応: FormDataで送信
+    let formData = new FormData();
+    formData.append('name', selectedName);
+    formData.append('uri', selectedUri);
+    formData.append('latitude', location.latitude);
+    formData.append('longitude', location.longitude);
+    formData.append('location_name', location.location_name);
+    formData.append('comment', comment);
+    if (imageFile) formData.append('image', imageFile);
+
     fetch("/save_playlist", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "X-CSRF-Token": csrfToken,
         Accept: "application/json"
       },
-      body: JSON.stringify({
-        name: selectedName,
-        uri: selectedUri,
-        latitude: location.latitude,
-        longitude: location.longitude,
-        location_name: location.location_name
-      })
+      body: formData
     })
       .then(res => {
         if (!res.ok) {
@@ -327,6 +341,8 @@ export default class extends Controller {
           this.showStatus(`プレイリスト「${selectedName}」を保存しました`, "success");
           this.loadSavedPlaylists();
           playlistSelect.value = "";
+          if (commentInput) commentInput.value = "";
+          if (imageInput) imageInput.value = "";
           if (saveButton) {
             saveButton.disabled = true;
             saveButton.textContent = '選択したプレイリストを保存';
@@ -353,4 +369,12 @@ window.playPlaylistFromMap = function(playlistUri, playlistName) {
   const url = new URL('/player', window.location.origin);
   url.searchParams.set('uri', playlistUri);
   window.location.href = url;
+};
+
+// 一曲目デモ再生用グローバル関数
+window.playDemoTrack = function(trackUri) {
+  // Spotify Web Playback SDKや埋め込みプレイヤー等で再生する処理を実装（例: 別ページや埋め込み）
+  // ここでは簡易的にSpotify埋め込みを新規ウィンドウで表示
+  const embedUrl = `https://open.spotify.com/embed/track/${trackUri.split(':').pop()}`;
+  window.open(embedUrl, '_blank', 'width=400,height=600');
 };

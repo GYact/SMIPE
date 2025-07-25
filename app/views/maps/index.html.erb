@@ -39,6 +39,12 @@
             </option>
           <% end %>
         </select>
+        <div class="playlist-form-fields" style="margin-top:12px;">
+          <label for="playlist-comment" style="display:block;margin-bottom:4px;">コメント（任意）</label>
+          <textarea id="playlist-comment" rows="2" style="width:100%;margin-bottom:8px;resize:vertical;" placeholder="プレイリストへのコメント"></textarea>
+          <label for="playlist-image" style="display:block;margin-bottom:4px;">画像を添付（任意）</label>
+          <input type="file" id="playlist-image" accept="image/*" style="margin-bottom:8px;">
+        </div>
         <button data-action="click->map#saveSelectedPlaylist"
                 class="save-playlist-button" disabled>
           選択したプレイリストを保存
