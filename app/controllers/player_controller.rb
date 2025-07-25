@@ -86,7 +86,6 @@ class PlayerController < ApplicationController
     @user_location = current_user.has_location? ? {
       latitude: current_user.latitude,
       longitude: current_user.longitude,
-      location_name: current_user.location_name,
       last_updated: current_user.last_location_update,
       is_stale: current_user.location_stale?
     } : nil
@@ -152,7 +151,6 @@ class PlayerController < ApplicationController
     uri = params[:uri]
     latitude = params[:latitude]
     longitude = params[:longitude]
-    location_name = params[:location_name]
 
     if name.blank? || uri.blank?
       render json: { status: 'error', message: 'プレイリスト情報が不足しています。' }, status: :unprocessable_entity
@@ -169,8 +167,7 @@ class PlayerController < ApplicationController
         name: name,
         uri: uri,
         latitude: latitude,
-        longitude: longitude,
-        location_name: location_name
+        longitude: longitude
       )
 
       if playlist.save
@@ -217,7 +214,6 @@ class PlayerController < ApplicationController
         uri: location.uri,
         latitude: location.latitude,
         longitude: location.longitude,
-        location_name: location.location_name,
         created_at: location.created_at,
         user_nickname: location.user&.name || location.user&.nickname || "不明なユーザー",
         user_image: location.user&.image,

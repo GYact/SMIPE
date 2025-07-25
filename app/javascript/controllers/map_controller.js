@@ -78,8 +78,7 @@ export default class extends Controller {
 
         this.userLocationValue = {
           latitude: latitude,
-          longitude: longitude,
-          location_name: `緯度: ${latitude.toFixed(4)}, 経度: ${longitude.toFixed(4)}`
+          longitude: longitude
         };
       },
       (error) => {
@@ -122,8 +121,7 @@ export default class extends Controller {
     const locationData = {
       location: {
         latitude: lat,
-        longitude: lng,
-        location_name: `緯度: ${lat.toFixed(4)}, 経度: ${lng.toFixed(4)}`
+        longitude: lng
       }
     };
 
@@ -232,7 +230,7 @@ export default class extends Controller {
           <div style="font-weight:bold; color:#1DB954; font-size:16px; margin-bottom:4px;">
             プレイリスト名: ${playlistName}
           </div>
-          <p>場所: ${location.location_name}</p>
+          <p>場所: 緯度 ${location.latitude.toFixed(4)}, 経度 ${location.longitude.toFixed(4)}</p>
           <p>保存日時: ${new Date(location.created_at).toLocaleString('ja-JP')}</p>
           <div class="user-info">
             ${userImage ? `<img src="${userImage}" alt="${userNickname}" class="user-avatar" style="width:32px;height:32px;border-radius:50%;margin-right:8px;">` : ''}
@@ -317,8 +315,7 @@ export default class extends Controller {
         name: selectedName,
         uri: selectedUri,
         latitude: location.latitude,
-        longitude: location.longitude,
-        location_name: location.location_name
+        longitude: location.longitude
       })
     })
       .then(res => {

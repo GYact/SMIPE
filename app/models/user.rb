@@ -33,11 +33,10 @@ class User < ApplicationRecord
     [latitude, longitude]
   end
 
-  def update_location(lat, lng, location_name = nil)
+  def update_location(lat, lng)
     update(
       latitude: lat,
       longitude: lng,
-      location_name: location_name,
       last_location_update: Time.current
     )
   end

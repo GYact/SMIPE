@@ -3,7 +3,7 @@ Rails.application.routes.draw do
   get '/.well-known/appspecific/com.chrome.devtools.json', to: ->(env) { [204, {}, []] }
 
   root 'static_pages#home'
-  resources :locations, only: [:show, :update]
+  
   
   # OmniAuth routes
   get '/auth/:provider/callback', to: 'sessions#create'
