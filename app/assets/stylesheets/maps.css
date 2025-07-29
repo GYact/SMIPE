@@ -185,7 +185,7 @@
 }
 
 .save-playlist-button:disabled {
-  background-color: #535353;
+  background-color: #1DB954;
   cursor: not-allowed;
 }
 
