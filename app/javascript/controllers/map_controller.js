@@ -208,11 +208,19 @@ export default class extends Controller {
     const postedImage = location.image_url || null;
     const firstTrackUri = location.first_track_uri || null;
 
-    // カスタムアイコン
+    // カスタムアイコン（Spotify画像優先）
     let markerOptions = {};
     if (playlistImage) {
       markerOptions.icon = L.icon({
         iconUrl: playlistImage,
+        iconSize: [48, 48],
+        iconAnchor: [24, 48],
+        popupAnchor: [0, -48],
+        className: 'playlist-leaflet-icon'
+      });
+    } else if (postedImage) {
+      markerOptions.icon = L.icon({
+        iconUrl: postedImage,
         iconSize: [48, 48],
         iconAnchor: [24, 48],
         popupAnchor: [0, -48],
@@ -231,8 +239,10 @@ export default class extends Controller {
           ${userImage ? `<img src="${userImage}" alt="${userNickname}" class="user-avatar" style="width:32px;height:32px;border-radius:50%;margin-right:8px;">` : ''}
           <span>保存者: ${userNickname}</span>
         </div>
-        ${comment ? `<div class="playlist-comment" style="margin-top:10px;"> ${comment}</div>` : ''}
-        ${postedImage ? `<div class="playlist-posted-image" style="margin-top:10px;"><img src="${postedImage}" alt="投稿画像" style="max-width:100%;max-height:120px;border-radius:8px;"></div>` : ''}
+        <div class="playlist-images" style="margin-top:10px;">
+          ${postedImage ? `<div><span style='font-size:12px;color:#888;'>投稿画像</span><br><img src='${postedImage}' alt='投稿画像' style='max-width:100%;max-height:120px;border-radius:8px;'></div>` : ''}
+        </div>
+        ${comment ? `<div class="playlist-comment" style="margin-top:10px;">${comment}</div>` : ''}
         <div class="playlist-actions" style="margin-top: 15px;">
           <button class="play-playlist-btn" onclick="window.playPlaylistFromMap('${location.uri}', '${location.name}')" style="
             background: #1DB954;

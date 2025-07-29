@@ -195,26 +195,19 @@ class PlayerController < ApplicationController
 
   def locations
     @playlist_locations = PlaylistLocation.includes(:user).order(created_at: :desc)
-    
-    Rails.logger.info "Playlist locations found: #{@playlist_locations.count}"
-    @playlist_locations.each do |location|
-      Rails.logger.info "Location: #{location.name}, User: #{location.user&.name || location.user&.nickname || 'Unknown'}"
-    end
-    
+
     playlist_images = {}
-    if logged_in? && current_user.access_token.present?
+    @playlist_locations.each do |location|
+      playlist_id = location.uri&.split(':')&.last
+      # Spotify APIから直接取得
       begin
-        current_user.refresh_token_if_expired!
-        spotify_user = current_user.to_rspotify_user
-        all_playlists = spotify_user.playlists
-        all_playlists.each do |pl|
-          playlist_images[pl.id] = pl.images.first['url'] if pl.images&.any?
-        end
+        spotify_playlist = RSpotify::Playlist.find_by_id(playlist_id)
+        playlist_images[playlist_id] = spotify_playlist&.images&.first&.dig('url') if spotify_playlist&.images&.any?
       rescue => e
-        Rails.logger.error "Error fetching playlist images: #{e.message}"
+        Rails.logger.error "Error fetching playlist image for #{playlist_id}: #{e.message}"
       end
     end
-    
+
     render json: @playlist_locations.map { |location|
       playlist_id = location.uri&.split(':')&.last
       {
